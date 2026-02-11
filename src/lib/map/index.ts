@@ -1,7 +1,7 @@
 import maplibregl from 'maplibre-gl';
 import { Protocol } from 'pmtiles';
+import { addClickInteraction, addHoverInteraction } from './interactions/index';
 import MAP_STYLE from './style';
-import { addHoverInteraction } from './interactions';
 
 export function initMap(container: HTMLDivElement): () => void {
   const protocol = new Protocol();
@@ -19,6 +19,7 @@ export function initMap(container: HTMLDivElement): () => void {
   });
 
   addHoverInteraction(map);
+  addClickInteraction(map);
 
   return () => {
     map.remove();
