@@ -10,14 +10,14 @@ export function addHoverInteraction(map: maplibregl.Map): void {
     if (id === hoveredId) return;
     if (hoveredId !== null) {
       map.setFeatureState(
-        { source: 'countries', sourceLayer: 'bnda_ctyfgb', id: hoveredId },
+        { source: 'countries', sourceLayer: 'bnda_cty', id: hoveredId },
         { hover: false }
       );
     }
     hoveredId = id ?? null;
     if (hoveredId !== null) {
       map.setFeatureState(
-        { source: 'countries', sourceLayer: 'bnda_ctyfgb', id: hoveredId },
+        { source: 'countries', sourceLayer: 'bnda_cty', id: hoveredId },
         { hover: true }
       );
     }
@@ -27,7 +27,7 @@ export function addHoverInteraction(map: maplibregl.Map): void {
     map.getCanvas().style.cursor = '';
     if (hoveredId !== null) {
       map.setFeatureState(
-        { source: 'countries', sourceLayer: 'bnda_ctyfgb', id: hoveredId },
+        { source: 'countries', sourceLayer: 'bnda_cty', id: hoveredId },
         { hover: false }
       );
     }

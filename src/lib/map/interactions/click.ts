@@ -40,7 +40,7 @@ export function addClickInteraction(map: maplibregl.Map): void {
 
     // Query all loaded tiles for this country to get the full extent
     const features = map.querySourceFeatures('countries', {
-      sourceLayer: 'bnda_ctyfgb',
+      sourceLayer: 'bnda_cty',
       filter: ['==', ['get', 'objectid'], objectid]
     });
 
