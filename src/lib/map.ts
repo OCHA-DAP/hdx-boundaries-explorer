@@ -57,7 +57,7 @@ export function initMap(container: HTMLDivElement): () => void {
   const map = new maplibregl.Map({
     container,
     style: MAP_STYLE,
-    center: [0, 0],
+    center: [20, 5],
     zoom: 3
   });
 
