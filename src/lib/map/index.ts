@@ -12,7 +12,7 @@ export function initMap(container: HTMLDivElement): () => void {
     container,
     style: MAP_STYLE,
     center: [20, 5],
-    zoom: 3
+    zoom: 3,
   });
 
   map.on('style.load', () => {

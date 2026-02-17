@@ -28,7 +28,7 @@ async function loadBboxMap(file: string): Promise<Map<string, Bbox>> {
           }
         }
         resolve();
-      }
+      },
     });
   });
 

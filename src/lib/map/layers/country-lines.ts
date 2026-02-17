@@ -9,8 +9,8 @@ export const layers: maplibregl.LayerSpecification[] = [
     filter: ['==', ['get', 'bdytyp'], '1'],
     paint: {
       'line-color': '#aaaaaa',
-      'line-width': 0.75
-    }
+      'line-width': 0.75,
+    },
   },
   {
     id: 'country-lines-disputed',
@@ -21,8 +21,8 @@ export const layers: maplibregl.LayerSpecification[] = [
     paint: {
       'line-color': '#aaaaaa',
       'line-width': 0.75,
-      'line-dasharray': [4, 3]
-    }
+      'line-dasharray': [4, 3],
+    },
   },
   {
     id: 'country-lines-other',
@@ -33,7 +33,7 @@ export const layers: maplibregl.LayerSpecification[] = [
     paint: {
       'line-color': '#bbbbbb',
       'line-width': 0.5,
-      'line-dasharray': [2, 2]
-    }
-  }
+      'line-dasharray': [2, 2],
+    },
+  },
 ];

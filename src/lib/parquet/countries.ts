@@ -27,7 +27,7 @@ export function getCountries(): Promise<Country[]> {
               .map((r) => ({ iso3: r['ISO-alpha3 Code'], name: r['Country or Area'] }))
               .sort((a, b) => a.name.localeCompare(b.name));
             resolve(countries);
-          }
+          },
         });
       });
     })();

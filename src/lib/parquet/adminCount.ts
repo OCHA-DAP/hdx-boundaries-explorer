@@ -21,16 +21,16 @@ function loadCounts(source: string, level: AdminLevel): Promise<Map<string, numb
               counts.set(row.iso3, (counts.get(row.iso3) ?? 0) + 1);
             }
             resolve(counts);
-          }
+          },
         });
-      })
+      }),
   );
 }
 
 export async function getAdminCount(
   source: string,
   level: AdminLevel,
-  iso3: string
+  iso3: string,
 ): Promise<number> {
   const key = `${source}-${level}`;
   if (!cache.has(key)) cache.set(key, loadCounts(source, level));

@@ -5,7 +5,7 @@ export type AdminLevel = (typeof ADMIN_LEVELS)[number];
 
 export function adminLayersForSource(
   sourceId: string,
-  level: AdminLevel
+  level: AdminLevel,
 ): maplibregl.LayerSpecification[] {
   const source = `${sourceId}-adm${level}`;
   const sourceLayer = `${sourceId}_adm${level}`;
@@ -17,7 +17,7 @@ export function adminLayersForSource(
       'source-layer': sourceLayer,
       filter: ['==', ['get', 'iso3'], ''],
       layout: { visibility: 'none' },
-      paint: { 'fill-color': '#4a90d9', 'fill-opacity': 0.15 }
+      paint: { 'fill-color': '#4a90d9', 'fill-opacity': 0.15 },
     },
     {
       id: `${sourceId}-adm${level}-line`,
@@ -26,7 +26,7 @@ export function adminLayersForSource(
       'source-layer': sourceLayer,
       filter: ['==', ['get', 'iso3'], ''],
       layout: { visibility: 'none' },
-      paint: { 'line-color': '#2060a0', 'line-width': 1 }
-    }
+      paint: { 'line-color': '#2060a0', 'line-width': 1 },
+    },
   ];
 }

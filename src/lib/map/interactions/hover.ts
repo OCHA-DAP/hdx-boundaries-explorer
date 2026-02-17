@@ -11,14 +11,14 @@ export function addHoverInteraction(map: maplibregl.Map): void {
     if (hoveredId !== null) {
       map.setFeatureState(
         { source: 'countries', sourceLayer: 'bnda_cty', id: hoveredId },
-        { hover: false }
+        { hover: false },
       );
     }
     hoveredId = id ?? null;
     if (hoveredId !== null) {
       map.setFeatureState(
         { source: 'countries', sourceLayer: 'bnda_cty', id: hoveredId },
-        { hover: true }
+        { hover: true },
       );
     }
   });
@@ -28,7 +28,7 @@ export function addHoverInteraction(map: maplibregl.Map): void {
     if (hoveredId !== null) {
       map.setFeatureState(
         { source: 'countries', sourceLayer: 'bnda_cty', id: hoveredId },
-        { hover: false }
+        { hover: false },
       );
     }
     hoveredId = null;

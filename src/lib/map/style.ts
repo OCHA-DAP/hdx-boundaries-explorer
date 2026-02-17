@@ -14,9 +14,9 @@ const admSources = Object.fromEntries(
   ADMIN_SOURCES.flatMap((src) =>
     src.levels.map((l) => [
       `${src.id}-adm${l}`,
-      { type: 'vector' as const, url: pmtiles(`${src.id}_adm${l}.pmtiles`) }
-    ])
-  )
+      { type: 'vector' as const, url: pmtiles(`${src.id}_adm${l}.pmtiles`) },
+    ]),
+  ),
 );
 
 const MAP_STYLE: maplibregl.StyleSpecification = {
@@ -24,30 +24,30 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
   sources: {
     land: {
       type: 'vector',
-      url: pmtiles('land_polygons.pmtiles')
+      url: pmtiles('land_polygons.pmtiles'),
     },
     countries: {
       type: 'vector',
       url: pmtiles('bnda_cty.pmtiles'),
-      promoteId: { bnda_cty: 'objectid' }
+      promoteId: { bnda_cty: 'objectid' },
     },
     'country-lines': {
       type: 'vector',
-      url: pmtiles('bndl.pmtiles')
+      url: pmtiles('bndl.pmtiles'),
     },
-    ...admSources
+    ...admSources,
   },
   layers: [
     {
       id: 'background',
       type: 'background',
-      paint: { 'background-color': '#a8d3ea' }
+      paint: { 'background-color': '#a8d3ea' },
     },
     ...landLayers,
     ...countriesLayers,
     ...countryLineLayers,
-    ...ADMIN_SOURCES.flatMap((src) => src.levels.flatMap((l) => adminLayersForSource(src.id, l)))
-  ]
+    ...ADMIN_SOURCES.flatMap((src) => src.levels.flatMap((l) => adminLayersForSource(src.id, l))),
+  ],
 };
 
 export default MAP_STYLE;

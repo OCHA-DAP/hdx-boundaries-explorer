@@ -19,9 +19,9 @@ export function addClickInteraction(map: maplibregl.Map): void {
     map.fitBounds(
       [
         [bbox[0], bbox[1]],
-        [bbox[2], bbox[3]]
+        [bbox[2], bbox[3]],
       ],
-      { padding: 50 }
+      { padding: 50 },
     );
   });
 }
