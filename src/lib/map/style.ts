@@ -12,9 +12,15 @@ const pmtiles = (file: string) => `pmtiles://${PMTILES_BASE}/${file}`;
 
 const admSources = Object.fromEntries(
   ADMIN_SOURCES.flatMap((src) =>
-    src.levels.map((l) => [
-      `${src.id}-adm${l}`,
-      { type: 'vector' as const, url: pmtiles(`${src.id}_adm${l}.pmtiles`) },
+    src.levels.flatMap((l) => [
+      [
+        `${src.id}-adm${l}`,
+        { type: 'vector' as const, url: pmtiles(`${src.id}_adm${l}.pmtiles`) },
+      ],
+      [
+        `${src.id}-adm${l}-labels`,
+        { type: 'vector' as const, url: pmtiles(`${src.id}_adm${l}_labels.pmtiles`) },
+      ],
     ]),
   ),
 );
@@ -46,7 +52,16 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
     ...landLayers,
     ...countriesLayers,
     ...countryLineLayers,
-    ...ADMIN_SOURCES.flatMap((src) => src.levels.flatMap((l) => adminLayersForSource(src.id, l))),
+    ...ADMIN_SOURCES.flatMap((src) =>
+      src.levels.flatMap((l) =>
+        adminLayersForSource(
+          src.id,
+          l,
+          src.nameField.replace('{level}', String(l)),
+          src.codeField.replace('{level}', String(l)),
+        ),
+      ),
+    ),
   ],
 };
 

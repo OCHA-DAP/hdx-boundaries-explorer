@@ -1,13 +1,14 @@
 import { ADMIN_SOURCES } from '$lib/sources';
 import type maplibregl from 'maplibre-gl';
 import { get } from 'svelte/store';
-import { selectedAdmin, selectedSource } from './store';
+import { labelsEnabled, selectedAdmin, selectedIso3, selectedSource } from './store';
 
 let cancelPendingHide: (() => void) | null = null;
 
 export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
   const activeLevel = get(selectedAdmin);
   const activeSource = get(selectedSource);
+  const showLabels = get(labelsEnabled);
 
   // Cancel any in-progress hide from a previous switch
   if (cancelPendingHide) {
@@ -21,8 +22,10 @@ export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
       if (src.id === activeSource && l === activeLevel) {
         map.setLayoutProperty(`${src.id}-adm${l}-fill`, 'visibility', 'visible');
         map.setLayoutProperty(`${src.id}-adm${l}-line`, 'visibility', 'visible');
+        map.setLayoutProperty(`${src.id}-adm${l}-label`, 'visibility', showLabels ? 'visible' : 'none');
         map.setFilter(`${src.id}-adm${l}-fill`, ['==', ['get', 'iso3'], iso3]);
         map.setFilter(`${src.id}-adm${l}-line`, ['==', ['get', 'iso3'], iso3]);
+        map.setFilter(`${src.id}-adm${l}-label`, ['==', ['get', 'iso3'], iso3]);
       }
     }
   }
@@ -38,8 +41,10 @@ export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
         if (src.id !== activeSource || l !== activeLevel) {
           map.setLayoutProperty(`${src.id}-adm${l}-fill`, 'visibility', 'none');
           map.setLayoutProperty(`${src.id}-adm${l}-line`, 'visibility', 'none');
+          map.setLayoutProperty(`${src.id}-adm${l}-label`, 'visibility', 'none');
           map.setFilter(`${src.id}-adm${l}-fill`, ['==', ['get', 'iso3'], '']);
           map.setFilter(`${src.id}-adm${l}-line`, ['==', ['get', 'iso3'], '']);
+          map.setFilter(`${src.id}-adm${l}-label`, ['==', ['get', 'iso3'], '']);
         }
       }
     }
@@ -50,4 +55,18 @@ export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
 
   map.on('render', onRender);
   cancelPendingHide = () => map.off('render', onRender);
+}
+
+export function initLabelsToggle(map: maplibregl.Map): void {
+  labelsEnabled.subscribe((enabled) => {
+    const iso3 = get(selectedIso3);
+    if (!iso3) return;
+    const activeSource = get(selectedSource);
+    const activeLevel = get(selectedAdmin);
+    map.setLayoutProperty(
+      `${activeSource}-adm${activeLevel}-label`,
+      'visibility',
+      enabled ? 'visible' : 'none',
+    );
+  });
 }

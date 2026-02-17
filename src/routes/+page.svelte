@@ -6,6 +6,7 @@
   import CountrySelect from '$lib/components/CountrySelect.svelte';
   import AdminSelect from '$lib/components/AdminSelect.svelte';
   import SourceSelect from '$lib/components/SourceSelect.svelte';
+  import LabelsToggle from '$lib/components/LabelsToggle.svelte';
 
   let mapContainer: HTMLDivElement;
 
@@ -19,6 +20,7 @@
     <CountrySelect />
     <SourceSelect />
     <AdminSelect />
+    <LabelsToggle />
   </Panel>
 </div>
 

@@ -37,5 +37,25 @@ for level in 1 2; do
     --no-tile-size-limit \
     --simplify-only-low-zooms \
     "$tmp_fgb"
+
   rm "$tmp_fgb"
+
+  # Generate Maximum Inscribed Circle label points → pmtiles
+  tmp_labels="tmp/${name}_labels.fgb"
+  duckdb -c "
+    LOAD spatial;
+    COPY (
+      SELECT * EXCLUDE (geometry, geometry_bbox),
+             ST_MaximumInscribedCircle(geometry).center AS geometry
+      FROM read_parquet('${parquet}')
+    ) TO '${tmp_labels}' WITH (FORMAT GDAL, DRIVER 'FlatGeobuf');
+  "
+  tippecanoe \
+    --output "static/pmtiles/${name}_labels.pmtiles" \
+    --layer "${name}_labels" \
+    --force \
+    --maximum-zoom=g \
+    --no-tile-size-limit \
+    "$tmp_labels"
+  rm "$tmp_labels"
 done

@@ -1,10 +1,27 @@
 import maplibregl from 'maplibre-gl';
 import { get } from 'svelte/store';
 import { ADMIN_SOURCES } from '$lib/sources';
-import { selectedAdmin, selectedSource } from '$lib/map/store';
+import { labelsEnabled, selectedAdmin, selectedIso3, selectedSource } from '$lib/map/store';
 
 export function addHoverInteraction(map: maplibregl.Map): void {
   let hoveredId: string | number | null = null;
+  let hoveredIso3: string | null = null;
+
+  function clearHover() {
+    if (hoveredId !== null) {
+      map.setFeatureState(
+        { source: 'countries', sourceLayer: 'bnda_cty', id: hoveredId },
+        { hover: false },
+      );
+    }
+    hoveredId = null;
+    hoveredIso3 = null;
+  }
+
+  // When a country is selected, remove any hover highlight from it.
+  selectedIso3.subscribe((iso3) => {
+    if (hoveredIso3 === iso3) clearHover();
+  });
 
   map.on('mousemove', 'countries-hover', (e) => {
     if (!e.features?.length) return;
@@ -17,7 +34,15 @@ export function addHoverInteraction(map: maplibregl.Map): void {
         { hover: false },
       );
     }
+    const iso3: string | null = e.features[0].properties?.iso3cd ?? null;
+    // Don't darken the currently selected country on hover.
+    if (iso3 && iso3 === get(selectedIso3)) {
+      hoveredId = null;
+      hoveredIso3 = null;
+      return;
+    }
     hoveredId = id ?? null;
+    hoveredIso3 = iso3;
     if (hoveredId !== null) {
       map.setFeatureState(
         { source: 'countries', sourceLayer: 'bnda_cty', id: hoveredId },
@@ -28,13 +53,7 @@ export function addHoverInteraction(map: maplibregl.Map): void {
 
   map.on('mouseleave', 'countries-hover', () => {
     map.getCanvas().style.cursor = '';
-    if (hoveredId !== null) {
-      map.setFeatureState(
-        { source: 'countries', sourceLayer: 'bnda_cty', id: hoveredId },
-        { hover: false },
-      );
-    }
-    hoveredId = null;
+    clearHover();
   });
 }
 
@@ -70,8 +89,12 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
     lastLngLat = null;
   });
 
+  labelsEnabled.subscribe((enabled) => {
+    if (enabled) popup.remove();
+  });
+
   selectedSource.subscribe((newSource) => {
-    if (!lastPoint || !lastLngLat) return;
+    if (!lastPoint || !lastLngLat || get(labelsEnabled)) return;
 
     const level = get(selectedAdmin);
     const srcDef = ADMIN_SOURCES.find((s) => s.id === newSource);
@@ -109,6 +132,7 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
         if (!e.features?.length) return;
         lastPoint = e.point;
         lastLngLat = e.lngLat;
+        if (get(labelsEnabled)) return;
         const html = buildPopupHtml(e.features[0].properties ?? {}, src, level);
         if (!html) return;
         map.getCanvas().style.cursor = 'pointer';

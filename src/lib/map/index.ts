@@ -1,5 +1,6 @@
 import maplibregl from 'maplibre-gl';
 import { Protocol } from 'pmtiles';
+import { initLabelsToggle } from './admin';
 import { addAdminHoverInteraction, addClickInteraction, addHoverInteraction } from './interactions/index';
 import MAP_STYLE from './style';
 import { mapStore } from './store';
@@ -23,6 +24,7 @@ export function initMap(container: HTMLDivElement): () => void {
   addHoverInteraction(map);
   addClickInteraction(map);
   addAdminHoverInteraction(map);
+  initLabelsToggle(map);
 
   return () => {
     mapStore.set(null);
