@@ -38,6 +38,13 @@ export function addClickInteraction(map: maplibregl.Map): void {
     const objectid = e.features[0].properties?.objectid;
     if (objectid == null) return;
 
+    const iso3: string | undefined = e.features[0].properties?.iso3cd;
+    if (iso3) {
+      const adm1Filter: maplibregl.FilterSpecification = ['==', ['get', 'iso3'], iso3];
+      map.setFilter('adm1-fill', adm1Filter);
+      map.setFilter('adm1-line', adm1Filter);
+    }
+
     // Query all loaded tiles for this country to get the full extent
     const features = map.querySourceFeatures('countries', {
       sourceLayer: 'bnda_cty',

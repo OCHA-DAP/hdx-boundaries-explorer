@@ -26,3 +26,5 @@ vite.config.ts.timestamp-*
 *.fgb
 *.parquet
 *.pmtiles
+
+CLAUDE.md

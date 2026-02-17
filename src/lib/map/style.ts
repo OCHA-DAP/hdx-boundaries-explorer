@@ -1,4 +1,5 @@
 import type maplibregl from 'maplibre-gl';
+import { layers as adm1Layers } from './layers/adm1';
 import { layers as countriesLayers } from './layers/countries';
 import { layers as countryLineLayers } from './layers/country-lines';
 import { layers as landLayers } from './layers/land';
@@ -23,6 +24,10 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
     'country-lines': {
       type: 'vector',
       url: pmtiles('bndl.pmtiles')
+    },
+    adm1: {
+      type: 'vector',
+      url: pmtiles('ocha_adm1.pmtiles')
     }
   },
   layers: [
@@ -35,7 +40,8 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
     },
     ...landLayers,
     ...countriesLayers,
-    ...countryLineLayers
+    ...countryLineLayers,
+    ...adm1Layers
   ]
 };
 
