@@ -4,12 +4,10 @@
   import { mapStore, selectedAdmin, selectedIso3, selectedSource } from '$lib/map/store';
   import { ADMIN_SOURCES, getLevelsForSource } from '$lib/sources';
 
-  function onSelect(e: Event) {
-    const source = (e.target as HTMLSelectElement).value;
-    selectedSource.set(source);
+  function switchTo(sourceId: string) {
+    selectedSource.set(sourceId);
 
-    // Clamp selectedAdmin to the deepest level available in the new source
-    const levels = getLevelsForSource(source);
+    const levels = getLevelsForSource(sourceId);
     const current = get(selectedAdmin);
     if (!levels.includes(current as (typeof levels)[number])) {
       selectedAdmin.set(levels[levels.length - 1]);
@@ -20,7 +18,25 @@
     if (!map || !iso3) return;
     applyAdminFilter(map, iso3);
   }
+
+  function onSelect(e: Event) {
+    switchTo((e.target as HTMLSelectElement).value);
+  }
+
+  function onKeydown(e: KeyboardEvent) {
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+    if (e.key !== '[' && e.key !== ']') return;
+
+    const idx = ADMIN_SOURCES.findIndex((s) => s.id === get(selectedSource));
+    const next =
+      e.key === ']'
+        ? (idx + 1) % ADMIN_SOURCES.length
+        : (idx - 1 + ADMIN_SOURCES.length) % ADMIN_SOURCES.length;
+    switchTo(ADMIN_SOURCES[next].id);
+  }
 </script>
+
+<svelte:window onkeydown={onKeydown} />
 
 <label for="source-select">Source</label>
 <select id="source-select" value={$selectedSource} onchange={onSelect}>

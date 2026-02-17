@@ -1,21 +1,53 @@
+import { ADMIN_SOURCES } from '$lib/sources';
 import type maplibregl from 'maplibre-gl';
 import { get } from 'svelte/store';
-import { ADMIN_SOURCES } from '$lib/sources';
 import { selectedAdmin, selectedSource } from './store';
+
+let cancelPendingHide: (() => void) | null = null;
 
 export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
   const activeLevel = get(selectedAdmin);
   const activeSource = get(selectedSource);
 
+  // Cancel any in-progress hide from a previous switch
+  if (cancelPendingHide) {
+    cancelPendingHide();
+    cancelPendingHide = null;
+  }
+
+  // Immediately show the new active layer (kicks off tile loading)
   for (const src of ADMIN_SOURCES) {
     for (const l of src.levels) {
-      const isActive = src.id === activeSource && l === activeLevel;
-      const visibility = isActive ? 'visible' : 'none';
-      const filter: maplibregl.FilterSpecification = ['==', ['get', 'iso3'], isActive ? iso3 : ''];
-      map.setLayoutProperty(`${src.id}-adm${l}-fill`, 'visibility', visibility);
-      map.setLayoutProperty(`${src.id}-adm${l}-line`, 'visibility', visibility);
-      map.setFilter(`${src.id}-adm${l}-fill`, filter);
-      map.setFilter(`${src.id}-adm${l}-line`, filter);
+      if (src.id === activeSource && l === activeLevel) {
+        map.setLayoutProperty(`${src.id}-adm${l}-fill`, 'visibility', 'visible');
+        map.setLayoutProperty(`${src.id}-adm${l}-line`, 'visibility', 'visible');
+        map.setFilter(`${src.id}-adm${l}-fill`, ['==', ['get', 'iso3'], iso3]);
+        map.setFilter(`${src.id}-adm${l}-line`, ['==', ['get', 'iso3'], iso3]);
+      }
     }
   }
+
+  // Hide old layers the moment the new source's tiles are ready
+  const newSourceId = `${activeSource}-adm${activeLevel}`;
+
+  const onRender = () => {
+    if (!map.isSourceLoaded(newSourceId)) return;
+
+    for (const src of ADMIN_SOURCES) {
+      for (const l of src.levels) {
+        if (src.id !== activeSource || l !== activeLevel) {
+          map.setLayoutProperty(`${src.id}-adm${l}-fill`, 'visibility', 'none');
+          map.setLayoutProperty(`${src.id}-adm${l}-line`, 'visibility', 'none');
+          map.setFilter(`${src.id}-adm${l}-fill`, ['==', ['get', 'iso3'], '']);
+          map.setFilter(`${src.id}-adm${l}-line`, ['==', ['get', 'iso3'], '']);
+        }
+      }
+    }
+
+    map.off('render', onRender);
+    cancelPendingHide = null;
+  };
+
+  map.on('render', onRender);
+  cancelPendingHide = () => map.off('render', onRender);
 }
