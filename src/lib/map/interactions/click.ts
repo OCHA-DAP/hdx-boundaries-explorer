@@ -1,4 +1,5 @@
 import { getBboxForIso3 } from '$lib/parquet/bbox';
+import { selectedIso3 } from '$lib/map/store';
 import type maplibregl from 'maplibre-gl';
 
 export function addClickInteraction(map: maplibregl.Map): void {
@@ -7,6 +8,8 @@ export function addClickInteraction(map: maplibregl.Map): void {
 
     const iso3: string | undefined = e.features[0].properties?.iso3cd;
     if (!iso3) return;
+
+    selectedIso3.set(iso3);
 
     if (iso3) {
       const adm1Filter: maplibregl.FilterSpecification = ['==', ['get', 'iso3'], iso3];

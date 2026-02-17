@@ -1,19 +1,6 @@
 import { asyncBufferFromUrl, parquetRead } from 'hyparquet';
 import { compressors } from 'hyparquet-compressors';
-
-const PMTILES_BASE =
-  (import.meta.env.VITE_PMTILES_BASE as string | undefined) ??
-  'https://hdx-boundaries-explorer.fieldmaps.io/pmtiles';
-
-const PARQUET_BASE = PMTILES_BASE.replace(/\/pmtiles$/, '/parquet');
-
-function parquetUrl(file: string): string {
-  // DuckDB and hyparquet both need an absolute URL
-  const base = PARQUET_BASE.startsWith('/')
-    ? `${globalThis.location?.origin ?? ''}${PARQUET_BASE}`
-    : PARQUET_BASE;
-  return `${base}/${file}.parquet`;
-}
+import { parquetUrl } from './url';
 
 export type Bbox = [number, number, number, number];
 

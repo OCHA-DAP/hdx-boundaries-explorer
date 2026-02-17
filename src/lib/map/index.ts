@@ -2,6 +2,7 @@ import maplibregl from 'maplibre-gl';
 import { Protocol } from 'pmtiles';
 import { addClickInteraction, addHoverInteraction } from './interactions/index';
 import MAP_STYLE from './style';
+import { mapStore } from './store';
 
 export function initMap(container: HTMLDivElement): () => void {
   const protocol = new Protocol();
@@ -18,10 +19,12 @@ export function initMap(container: HTMLDivElement): () => void {
     map.setProjection({ type: 'globe' });
   });
 
+  mapStore.set(map);
   addHoverInteraction(map);
   addClickInteraction(map);
 
   return () => {
+    mapStore.set(null);
     map.remove();
     maplibregl.removeProtocol('pmtiles');
   };
