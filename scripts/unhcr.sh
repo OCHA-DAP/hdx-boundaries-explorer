@@ -1,21 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+BASE_URL="https://gis.unhcr.org/arcgis/rest/services/core_v2"
+
 mkdir -p static/parquet static/pmtiles tmp
 trap 'rm -rf tmp' EXIT
 
-for level in 1 2 3 4; do
-  name="wfp_adm${level}"
+for level in 1 2; do
+  name="unhcr_adm${level}"
+  url="${BASE_URL}/wrl_polbnd_adm${level}_a_unhcr/FeatureServer/0"
   parquet="static/parquet/${name}.parquet"
 
-  # Download and clean
-  tmp_dl="tmp/${name}.parquet"
-  curl -fL "https://data.earthobservation.vam.wfp.org/public-share/boundaries/ge_adm${level}.parquet" -o "$tmp_dl"
+  query_url="${url}/query?where=gis_status%3D14&orderByFields=objectid&resultRecordCount=1&outFields=*&f=json"
+
+  # Download as Parquet, reproject to 4326, and make geometries valid
   gdal vector pipeline \
-    ! read "$tmp_dl" \
+    ! read "ESRIJSON:${query_url}" \
+    ! reproject --dst-crs EPSG:4326 \
     ! make-valid \
-    ! set-field-type --src-field-type Binary --dst-field-type String \
     ! write "$parquet" \
+      --config OGR_ORGANIZE_POLYGONS ONLY_CCW \
       --lco COMPRESSION=ZSTD \
       --lco COMPRESSION_LEVEL=15 \
       --lco USE_PARQUET_GEO_TYPES=YES \
