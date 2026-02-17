@@ -2,9 +2,10 @@
   import 'maplibre-gl/dist/maplibre-gl.css';
   import { onMount } from 'svelte';
   import { initMap } from '$lib/map';
-  import Panel from '$lib/Panel.svelte';
-  import CountrySelect from '$lib/CountrySelect.svelte';
-  import AdminSelect from '$lib/AdminSelect.svelte';
+  import Panel from '$lib/components/Panel.svelte';
+  import CountrySelect from '$lib/components/CountrySelect.svelte';
+  import AdminSelect from '$lib/components/AdminSelect.svelte';
+  import SourceSelect from '$lib/components/SourceSelect.svelte';
 
   let mapContainer: HTMLDivElement;
 
@@ -16,6 +17,7 @@
   <Panel>
     <h1>HDX Boundaries Explorer</h1>
     <CountrySelect />
+    <SourceSelect />
     <AdminSelect />
   </Panel>
 </div>

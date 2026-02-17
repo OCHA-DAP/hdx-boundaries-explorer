@@ -1,13 +1,21 @@
 import type maplibregl from 'maplibre-gl';
 import { get } from 'svelte/store';
-import { ADMIN_LEVELS } from './layers/admin';
-import { selectedAdmin } from './store';
+import { ADMIN_SOURCES } from '$lib/sources';
+import { selectedAdmin, selectedSource } from './store';
 
 export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
-  const level = get(selectedAdmin);
-  for (const l of ADMIN_LEVELS) {
-    const filter: maplibregl.FilterSpecification = ['==', ['get', 'iso3'], l === level ? iso3 : ''];
-    map.setFilter(`adm${l}-fill`, filter);
-    map.setFilter(`adm${l}-line`, filter);
+  const activeLevel = get(selectedAdmin);
+  const activeSource = get(selectedSource);
+
+  for (const src of ADMIN_SOURCES) {
+    for (const l of src.levels) {
+      const isActive = src.id === activeSource && l === activeLevel;
+      const visibility = isActive ? 'visible' : 'none';
+      const filter: maplibregl.FilterSpecification = ['==', ['get', 'iso3'], isActive ? iso3 : ''];
+      map.setLayoutProperty(`${src.id}-adm${l}-fill`, 'visibility', visibility);
+      map.setLayoutProperty(`${src.id}-adm${l}-line`, 'visibility', visibility);
+      map.setFilter(`${src.id}-adm${l}-fill`, filter);
+      map.setFilter(`${src.id}-adm${l}-line`, filter);
+    }
   }
 }

@@ -2,7 +2,8 @@
   import { applyAdminFilter } from '$lib/map/admin';
   import { ADMIN_LEVELS } from '$lib/map/layers/admin';
   import { getAdminCount } from '$lib/parquet/adminCount';
-  import { mapStore, selectedAdmin, selectedIso3 } from '$lib/map/store';
+  import { mapStore, selectedAdmin, selectedIso3, selectedSource } from '$lib/map/store';
+  import { getLevelsForSource } from '$lib/sources';
   import { get } from 'svelte/store';
 
   let counts: Record<number, number | null> = $state(
@@ -11,35 +12,39 @@
 
   $effect(() => {
     const iso3 = $selectedIso3;
-    counts = Object.fromEntries(ADMIN_LEVELS.map((l) => [l, null]));
+    const source = $selectedSource;
+    const sourceLevels = getLevelsForSource(source);
+
+    // Levels not in this source are immediately 0; source levels start as null (loading)
+    counts = Object.fromEntries(ADMIN_LEVELS.map((l) => [l, sourceLevels.includes(l) ? null : 0]));
     if (!iso3) return;
 
     let cancelled = false;
 
     // Update counts incrementally for display
-    for (const level of ADMIN_LEVELS) {
-      getAdminCount(level, iso3).then((n) => {
+    for (const level of sourceLevels) {
+      getAdminCount(source, level, iso3).then((n) => {
         if (!cancelled) counts = { ...counts, [level]: n };
       });
     }
 
     // Once all counts are known, stay on current level if it has data,
     // otherwise drop to the deepest non-empty level
-    Promise.all(ADMIN_LEVELS.map((level) => getAdminCount(level, iso3).then((n) => ({ level, n })))).then(
-      (results) => {
-        if (cancelled) return;
-        const current = get(selectedAdmin);
-        const currentCount = results.find((r) => r.level === current)?.n ?? 0;
-        if (currentCount === 0) {
-          const best = [...results].reverse().find((r) => r.n > 0);
-          if (!best) return;
-          selectedAdmin.set(best.level);
-        }
-        const map = get(mapStore);
-        if (!map) return;
-        applyAdminFilter(map, iso3);
+    Promise.all(
+      sourceLevels.map((level) => getAdminCount(source, level, iso3).then((n) => ({ level, n })))
+    ).then((results) => {
+      if (cancelled) return;
+      const current = get(selectedAdmin);
+      const currentCount = results.find((r) => r.level === current)?.n ?? 0;
+      if (currentCount === 0) {
+        const best = [...results].reverse().find((r) => r.n > 0);
+        if (!best) return;
+        selectedAdmin.set(best.level);
       }
-    );
+      const map = get(mapStore);
+      if (!map) return;
+      applyAdminFilter(map, iso3);
+    });
 
     return () => {
       cancelled = true;

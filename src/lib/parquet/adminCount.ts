@@ -3,11 +3,11 @@ import { compressors } from 'hyparquet-compressors';
 import type { AdminLevel } from '$lib/map/layers/admin';
 import { parquetUrl } from './url';
 
-// Per-level cache: level -> Promise<Map<iso3, count>>
-const cache = new Map<number, Promise<Map<string, number>>>();
+// Cache keyed by `${source}-${level}` -> Promise<Map<iso3, count>>
+const cache = new Map<string, Promise<Map<string, number>>>();
 
-function loadCounts(level: AdminLevel): Promise<Map<string, number>> {
-  return asyncBufferFromUrl({ url: parquetUrl(`ocha_adm${level}`) }).then(
+function loadCounts(source: string, level: AdminLevel): Promise<Map<string, number>> {
+  return asyncBufferFromUrl({ url: parquetUrl(`${source}_adm${level}`) }).then(
     (asyncBuffer) =>
       new Promise((resolve) => {
         parquetRead({
@@ -27,8 +27,13 @@ function loadCounts(level: AdminLevel): Promise<Map<string, number>> {
   );
 }
 
-export async function getAdminCount(level: AdminLevel, iso3: string): Promise<number> {
-  if (!cache.has(level)) cache.set(level, loadCounts(level));
-  const counts = await cache.get(level)!;
+export async function getAdminCount(
+  source: string,
+  level: AdminLevel,
+  iso3: string
+): Promise<number> {
+  const key = `${source}-${level}`;
+  if (!cache.has(key)) cache.set(key, loadCounts(source, level));
+  const counts = await cache.get(key)!;
   return counts.get(iso3) ?? 0;
 }
