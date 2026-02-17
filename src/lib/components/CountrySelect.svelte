@@ -28,30 +28,36 @@
     map.fitBounds(
       [
         [bbox[0], bbox[1]],
-        [bbox[2], bbox[3]]
+        [bbox[2], bbox[3]],
       ],
-      { padding: 50 }
+      { padding: 50 },
     );
   }
 </script>
 
-<label for="country-select">Country / Territory</label>
-<select id="country-select" value={$selectedIso3} onchange={onSelect}>
-  <option value="">Select…</option>
-  {#each countries as country (country.iso3)}
-    <option value={country.iso3}>{country.name} ({country.iso3})</option>
-  {/each}
-</select>
+<div class="field">
+  <label for="country-select">Country / Territory</label>
+  <select id="country-select" value={$selectedIso3} onchange={onSelect}>
+    <option value="">Select…</option>
+    {#each countries as country (country.iso3)}
+      <option value={country.iso3}>{country.name} ({country.iso3})</option>
+    {/each}
+  </select>
+</div>
 
 <style>
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
   label {
-    display: block;
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: #666;
-    margin-bottom: 4px;
   }
 
   select {

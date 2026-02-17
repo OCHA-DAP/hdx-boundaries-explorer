@@ -7,7 +7,7 @@
   import { get } from 'svelte/store';
 
   let counts: Record<number, number | null> = $state(
-    Object.fromEntries(ADMIN_LEVELS.map((l) => [l, null]))
+    Object.fromEntries(ADMIN_LEVELS.map((l) => [l, null])),
   );
 
   $effect(() => {
@@ -31,7 +31,7 @@
     // Once all counts are known, stay on current level if it has data,
     // otherwise drop to the deepest non-empty level
     Promise.all(
-      sourceLevels.map((level) => getAdminCount(source, level, iso3).then((n) => ({ level, n })))
+      sourceLevels.map((level) => getAdminCount(source, level, iso3).then((n) => ({ level, n }))),
     ).then((results) => {
       if (cancelled) return;
       const current = get(selectedAdmin);
@@ -63,24 +63,30 @@
   }
 </script>
 
-<label for="admin-select">Admin Level</label>
-<select id="admin-select" value={$selectedAdmin} onchange={onSelect}>
-  {#each ADMIN_LEVELS.filter((l) => counts[l] !== 0) as level (level)}
-    <option value={level}>
-      Admin {level}{counts[level] !== null ? ` (${counts[level]})` : ''}
-    </option>
-  {/each}
-</select>
+<div class="field">
+  <label for="admin-select">Admin Level</label>
+  <select id="admin-select" value={$selectedAdmin} onchange={onSelect}>
+    {#each ADMIN_LEVELS.filter((l) => counts[l] !== 0) as level (level)}
+      <option value={level}>
+        Admin {level}{counts[level] !== null ? ` (${counts[level]})` : ''}
+      </option>
+    {/each}
+  </select>
+</div>
 
 <style>
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
   label {
-    display: block;
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: #666;
-    margin-bottom: 4px;
   }
 
   select {

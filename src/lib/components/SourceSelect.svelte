@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { get } from 'svelte/store';
   import { applyAdminFilter } from '$lib/map/admin';
   import { mapStore, selectedAdmin, selectedIso3, selectedSource } from '$lib/map/store';
   import { ADMIN_SOURCES, getLevelsForSource } from '$lib/sources';
+  import { get } from 'svelte/store';
 
   function switchTo(sourceId: string) {
     selectedSource.set(sourceId);
@@ -38,22 +38,67 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<label for="source-select">Source</label>
-<select id="source-select" value={$selectedSource} onchange={onSelect}>
-  {#each ADMIN_SOURCES as source (source.id)}
-    <option value={source.id}>{source.label}</option>
-  {/each}
-</select>
+<div class="field">
+  <div class="label-row">
+    <label for="source-select">Source</label>
+    <span class="hint">
+      [ ] to cycle
+      <span class="tooltip">Use [ and ] to cycle through sources</span>
+    </span>
+  </div>
+  <select id="source-select" value={$selectedSource} onchange={onSelect}>
+    {#each ADMIN_SOURCES as source (source.id)}
+      <option value={source.id}>{source.label}</option>
+    {/each}
+  </select>
+</div>
 
 <style>
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .label-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
   label {
-    display: block;
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: #666;
-    margin-bottom: 4px;
+  }
+
+  .hint {
+    position: relative;
+    font-size: 10px;
+    color: #aaa;
+    font-family: monospace;
+    cursor: default;
+  }
+
+  .tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 4px);
+    right: 0;
+    background: #333;
+    color: #fff;
+    font-size: 11px;
+    font-family: sans-serif;
+    white-space: nowrap;
+    padding: 4px 8px;
+    border-radius: 4px;
+    pointer-events: none;
+  }
+
+  .hint:hover .tooltip {
+    display: block;
   }
 
   select {
