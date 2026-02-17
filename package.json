@@ -39,6 +39,8 @@
     "vite": "^7.3.1"
   },
   "dependencies": {
+    "hyparquet": "^1.25.0",
+    "hyparquet-compressors": "^1.1.1",
     "maplibre-gl": "^5.18.0",
     "pmtiles": "^4.4.0"
   }
