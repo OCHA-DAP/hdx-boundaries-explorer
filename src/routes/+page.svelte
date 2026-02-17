@@ -4,6 +4,7 @@
   import { initMap } from '$lib/map';
   import Panel from '$lib/Panel.svelte';
   import CountrySelect from '$lib/CountrySelect.svelte';
+  import AdminSelect from '$lib/AdminSelect.svelte';
 
   let mapContainer: HTMLDivElement;
 
@@ -15,6 +16,7 @@
   <Panel>
     <h1>HDX Boundaries Explorer</h1>
     <CountrySelect />
+    <AdminSelect />
   </Panel>
 </div>
 

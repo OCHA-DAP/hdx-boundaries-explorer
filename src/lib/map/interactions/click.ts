@@ -1,4 +1,5 @@
 import { getBboxForIso3 } from '$lib/parquet/bbox';
+import { applyAdminFilter } from '$lib/map/admin';
 import { selectedIso3 } from '$lib/map/store';
 import type maplibregl from 'maplibre-gl';
 
@@ -10,12 +11,7 @@ export function addClickInteraction(map: maplibregl.Map): void {
     if (!iso3) return;
 
     selectedIso3.set(iso3);
-
-    if (iso3) {
-      const adm1Filter: maplibregl.FilterSpecification = ['==', ['get', 'iso3'], iso3];
-      map.setFilter('adm1-fill', adm1Filter);
-      map.setFilter('adm1-line', adm1Filter);
-    }
+    applyAdminFilter(map, iso3);
 
     const bbox = await getBboxForIso3(iso3);
     if (!bbox) return;

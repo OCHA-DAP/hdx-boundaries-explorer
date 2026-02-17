@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { applyAdminFilter } from '$lib/map/admin';
   import { mapStore, selectedIso3 } from '$lib/map/store';
   import { getBboxForIso3 } from '$lib/parquet/bbox';
   import { getCountries, type Country } from '$lib/parquet/countries';
@@ -22,9 +23,7 @@
     const map = get(mapStore);
     if (!map) return;
 
-    const adm1Filter: Parameters<typeof map.setFilter>[1] = ['==', ['get', 'iso3'], iso3];
-    map.setFilter('adm1-fill', adm1Filter);
-    map.setFilter('adm1-line', adm1Filter);
+    applyAdminFilter(map, iso3);
 
     map.fitBounds(
       [

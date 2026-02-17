@@ -1,5 +1,5 @@
 import type maplibregl from 'maplibre-gl';
-import { layers as adm1Layers } from './layers/adm1';
+import { ADMIN_LEVELS, adminLayers } from './layers/admin';
 import { layers as countriesLayers } from './layers/countries';
 import { layers as countryLineLayers } from './layers/country-lines';
 import { layers as landLayers } from './layers/land';
@@ -25,10 +25,10 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
       type: 'vector',
       url: pmtiles('bndl.pmtiles')
     },
-    adm1: {
-      type: 'vector',
-      url: pmtiles('ocha_adm1.pmtiles')
-    }
+    adm1: { type: 'vector', url: pmtiles('ocha_adm1.pmtiles') },
+    adm2: { type: 'vector', url: pmtiles('ocha_adm2.pmtiles') },
+    adm3: { type: 'vector', url: pmtiles('ocha_adm3.pmtiles') },
+    adm4: { type: 'vector', url: pmtiles('ocha_adm4.pmtiles') }
   },
   layers: [
     {
@@ -41,7 +41,7 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
     ...landLayers,
     ...countriesLayers,
     ...countryLineLayers,
-    ...adm1Layers
+    ...ADMIN_LEVELS.flatMap(adminLayers)
   ]
 };
 

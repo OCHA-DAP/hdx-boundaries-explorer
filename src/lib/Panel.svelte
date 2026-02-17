@@ -1,5 +1,7 @@
 <div class="panel">
-  <slot />
+  <div class="content">
+    <slot />
+  </div>
 </div>
 
 <style>
@@ -17,8 +19,14 @@
     font-size: 14px;
   }
 
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
   .panel :global(h1) {
-    margin: 0 0 12px;
+    margin: 0;
     font-size: 18px;
     font-weight: 600;
     color: #1a1a1a;

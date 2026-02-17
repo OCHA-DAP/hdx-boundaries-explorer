@@ -3,3 +3,4 @@ import type maplibregl from 'maplibre-gl';
 
 export const mapStore = writable<maplibregl.Map | null>(null);
 export const selectedIso3 = writable<string>('');
+export const selectedAdmin = writable<number>(1);
