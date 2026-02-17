@@ -23,6 +23,25 @@
 </div>
 
 <style>
+  :global(.feature-tooltip .maplibregl-popup-content) {
+    padding: 6px 10px;
+    font-family: sans-serif;
+    font-size: 13px;
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    border-radius: 4px;
+    pointer-events: none;
+  }
+
+  :global(.feature-tooltip .maplibregl-popup-tip) {
+    display: none;
+  }
+
+  :global(.feature-tooltip .feature-tooltip-code) {
+    font-size: 11px;
+    opacity: 0.7;
+  }
+
   .map-root {
     position: relative;
     width: 100vw;

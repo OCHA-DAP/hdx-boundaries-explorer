@@ -1,2 +1,2 @@
 export { addClickInteraction } from './click';
-export { addHoverInteraction } from './hover';
+export { addAdminHoverInteraction, addHoverInteraction } from './hover';
