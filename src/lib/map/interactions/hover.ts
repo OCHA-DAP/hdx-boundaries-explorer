@@ -1,6 +1,7 @@
 import { labelsEnabled, selectedAdmin, selectedIso3, selectedSource } from '$lib/map/store';
 import { ADMIN_SOURCES } from '$lib/sources';
 import maplibregl from 'maplibre-gl';
+import type { Readable } from 'svelte/store';
 import { get } from 'svelte/store';
 
 export function addHoverInteraction(map: maplibregl.Map): void {
@@ -72,7 +73,11 @@ function buildPopupHtml(
     : String(name);
 }
 
-export function addAdminHoverInteraction(map: maplibregl.Map): void {
+export function addAdminHoverInteraction(
+  map: maplibregl.Map,
+  sourceStore: Readable<string> = selectedSource,
+  adminStore: Readable<number> = selectedAdmin,
+): void {
   const popup = new maplibregl.Popup({
     closeButton: false,
     closeOnClick: false,
@@ -83,7 +88,7 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
   let lastPoint: maplibregl.Point | null = null;
   let lastLngLat: maplibregl.LngLat | null = null;
 
-  selectedAdmin.subscribe(() => {
+  adminStore.subscribe(() => {
     popup.remove();
     lastPoint = null;
     lastLngLat = null;
@@ -93,10 +98,10 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
     if (enabled) popup.remove();
   });
 
-  selectedSource.subscribe((newSource) => {
+  sourceStore.subscribe((newSource) => {
     if (!lastPoint || !lastLngLat) return;
 
-    const level = get(selectedAdmin);
+    const level = get(adminStore);
     const srcDef = ADMIN_SOURCES.find((s) => s.id === newSource);
     if (!srcDef) return;
 

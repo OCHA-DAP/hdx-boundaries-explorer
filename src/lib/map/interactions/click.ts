@@ -1,10 +1,15 @@
 import { getBboxForIso3 } from '$lib/parquet/bbox';
 import { applyAdminFilter } from '$lib/map/admin';
-import { selectedIso3 } from '$lib/map/store';
+import { selectedAdmin, selectedIso3, selectedSource } from '$lib/map/store';
+import type { Readable } from 'svelte/store';
 import { get } from 'svelte/store';
 import type maplibregl from 'maplibre-gl';
 
-export function addClickInteraction(map: maplibregl.Map): void {
+export function addClickInteraction(
+  map: maplibregl.Map,
+  sourceStore: Readable<string> = selectedSource,
+  adminStore: Readable<number> = selectedAdmin,
+): void {
   map.on('click', 'countries-hover', async (e) => {
     if (!e.features?.length) return;
 
@@ -12,7 +17,7 @@ export function addClickInteraction(map: maplibregl.Map): void {
     if (!iso3 || iso3 === get(selectedIso3)) return;
 
     selectedIso3.set(iso3);
-    applyAdminFilter(map, iso3);
+    applyAdminFilter(map, iso3, get(sourceStore), get(adminStore));
 
     const bbox = await getBboxForIso3(iso3);
     if (!bbox) return;

@@ -1,19 +1,26 @@
 import { ADMIN_SOURCES } from '$lib/sources';
 import type maplibregl from 'maplibre-gl';
+import type { Readable } from 'svelte/store';
 import { get } from 'svelte/store';
 import { labelsEnabled, selectedAdmin, selectedIso3, selectedSource } from './store';
 
-let cancelPendingHide: (() => void) | null = null;
+const cancelPendingHides = new WeakMap<maplibregl.Map, () => void>();
 
-export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
-  const activeLevel = get(selectedAdmin);
-  const activeSource = get(selectedSource);
+export function applyAdminFilter(
+  map: maplibregl.Map,
+  iso3: string,
+  source?: string,
+  adminLevel?: number,
+): void {
+  const activeSource = source ?? get(selectedSource);
+  const activeLevel = adminLevel ?? get(selectedAdmin);
   const showLabels = get(labelsEnabled);
 
   // Cancel any in-progress hide from a previous switch
-  if (cancelPendingHide) {
-    cancelPendingHide();
-    cancelPendingHide = null;
+  const cancel = cancelPendingHides.get(map);
+  if (cancel) {
+    cancel();
+    cancelPendingHides.delete(map);
   }
 
   // Immediately show the new active layer (kicks off tile loading)
@@ -58,19 +65,23 @@ export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
     }
 
     map.off('render', onRender);
-    cancelPendingHide = null;
+    cancelPendingHides.delete(map);
   };
 
   map.on('render', onRender);
-  cancelPendingHide = () => map.off('render', onRender);
+  cancelPendingHides.set(map, () => map.off('render', onRender));
 }
 
-export function initLabelsToggle(map: maplibregl.Map): void {
+export function initLabelsToggle(
+  map: maplibregl.Map,
+  sourceStore: Readable<string> = selectedSource,
+  adminStore: Readable<number> = selectedAdmin,
+): void {
   labelsEnabled.subscribe((enabled) => {
     const iso3 = get(selectedIso3);
     if (!iso3) return;
-    const activeSource = get(selectedSource);
-    const activeLevel = get(selectedAdmin);
+    const activeSource = get(sourceStore);
+    const activeLevel = get(adminStore);
     map.setLayoutProperty(
       `${activeSource}-adm${activeLevel}-label`,
       'visibility',

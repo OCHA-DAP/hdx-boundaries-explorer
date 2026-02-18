@@ -1,22 +1,45 @@
 <script lang="ts">
   import { applyAdminFilter } from '$lib/map/admin';
-  import { mapStore, selectedAdmin, selectedIso3, selectedSource } from '$lib/map/store';
+  import {
+    selectedAdmin as globalAdmin,
+    mapStore as globalMapStore,
+    selectedSource as globalSource,
+    selectedIso3,
+    splitMode,
+  } from '$lib/map/store';
   import { ADMIN_SOURCES, getLevelsForSource } from '$lib/sources';
+  import type maplibregl from 'maplibre-gl';
+  import type { Writable } from 'svelte/store';
   import { get } from 'svelte/store';
 
+  interface Props {
+    sourceStore?: Writable<string>;
+    adminStore?: Writable<number>;
+    mapStoreOverride?: Writable<maplibregl.Map | null>;
+  }
+
+  let {
+    sourceStore = globalSource,
+    adminStore = globalAdmin,
+    mapStoreOverride = globalMapStore,
+  }: Props = $props();
+
+  // Only the left (global) panel handles keyboard shortcuts
+  const isGlobal = $derived($sourceStore === $globalSource);
+
   function switchTo(sourceId: string) {
-    selectedSource.set(sourceId);
+    sourceStore.set(sourceId);
 
     const levels = getLevelsForSource(sourceId);
-    const current = get(selectedAdmin);
+    const current = get(adminStore);
     if (!levels.includes(current as (typeof levels)[number])) {
-      selectedAdmin.set(levels[levels.length - 1]);
+      adminStore.set(levels[levels.length - 1]);
     }
 
-    const map = get(mapStore);
+    const map = get(mapStoreOverride);
     const iso3 = get(selectedIso3);
     if (!map || !iso3) return;
-    applyAdminFilter(map, iso3);
+    applyAdminFilter(map, iso3, get(sourceStore), get(adminStore));
   }
 
   function onSelect(e: Event) {
@@ -24,10 +47,12 @@
   }
 
   function onKeydown(e: KeyboardEvent) {
+    if (!isGlobal) return;
+    if ($splitMode) return;
     if (e.target instanceof HTMLInputElement) return;
     if (e.key !== '[' && e.key !== ']') return;
 
-    const idx = ADMIN_SOURCES.findIndex((s) => s.id === get(selectedSource));
+    const idx = ADMIN_SOURCES.findIndex((s) => s.id === get(sourceStore));
     const next =
       e.key === ']'
         ? (idx + 1) % ADMIN_SOURCES.length
@@ -40,13 +65,19 @@
 
 <div class="field">
   <div class="label-row">
-    <label for="source-select">Source</label>
-    <span class="hint">
-      [ ] to cycle
-      <span class="tooltip">Use [ and ] to cycle through sources</span>
-    </span>
+    <label for="source-select-{isGlobal ? 'global' : 'right'}">Source</label>
+    {#if isGlobal && !$splitMode}
+      <span class="hint">
+        [ ] to cycle
+        <span class="tooltip">Use [ and ] to cycle through sources</span>
+      </span>
+    {/if}
   </div>
-  <select id="source-select" value={$selectedSource} onchange={onSelect}>
+  <select
+    id="source-select-{isGlobal ? 'global' : 'right'}"
+    value={$sourceStore}
+    onchange={onSelect}
+  >
     {#each ADMIN_SOURCES as source (source.id)}
       <option value={source.id}>{source.label}</option>
     {/each}

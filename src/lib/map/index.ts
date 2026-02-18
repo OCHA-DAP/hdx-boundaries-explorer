@@ -1,5 +1,6 @@
 import maplibregl from 'maplibre-gl';
 import { Protocol } from 'pmtiles';
+import type { Writable } from 'svelte/store';
 import { initLabelsToggle } from './admin';
 import {
   addAdminHoverInteraction,
@@ -7,11 +8,26 @@ import {
   addHoverInteraction,
 } from './interactions/index';
 import MAP_STYLE from './style';
-import { mapStore } from './store';
+import { mapStore, selectedAdmin, selectedSource } from './store';
 
-export function initMap(container: HTMLDivElement): () => void {
+// Initialise the pmtiles protocol once for the lifetime of the app.
+let protocolRegistered = false;
+function ensureProtocol() {
+  if (protocolRegistered) return;
   const protocol = new Protocol();
   maplibregl.addProtocol('pmtiles', protocol.tile);
+  protocolRegistered = true;
+}
+
+export function initMap(
+  container: HTMLDivElement,
+  options?: {
+    sourceStore?: Writable<string>;
+    adminStore?: Writable<number>;
+    mapStoreOverride?: Writable<maplibregl.Map | null>;
+  },
+): () => void {
+  ensureProtocol();
 
   const map = new maplibregl.Map({
     container,
@@ -24,15 +40,18 @@ export function initMap(container: HTMLDivElement): () => void {
     map.setProjection({ type: 'globe' });
   });
 
-  mapStore.set(map);
+  const store = options?.mapStoreOverride ?? mapStore;
+  const srcStore = options?.sourceStore ?? selectedSource;
+  const admStore = options?.adminStore ?? selectedAdmin;
+
+  store.set(map);
   addHoverInteraction(map);
-  addClickInteraction(map);
-  addAdminHoverInteraction(map);
-  initLabelsToggle(map);
+  addClickInteraction(map, srcStore, admStore);
+  addAdminHoverInteraction(map, srcStore, admStore);
+  initLabelsToggle(map, srcStore, admStore);
 
   return () => {
-    mapStore.set(null);
+    store.set(null);
     map.remove();
-    maplibregl.removeProtocol('pmtiles');
   };
 }

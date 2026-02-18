@@ -2,9 +2,30 @@
   import { applyAdminFilter } from '$lib/map/admin';
   import { ADMIN_LEVELS } from '$lib/map/layers/admin';
   import { getAdminCount } from '$lib/parquet/adminCount';
-  import { mapStore, selectedAdmin, selectedIso3, selectedSource } from '$lib/map/store';
+  import {
+    mapStore as globalMapStore,
+    selectedAdmin as globalAdmin,
+    selectedIso3,
+    selectedSource as globalSource,
+  } from '$lib/map/store';
   import { getLevelsForSource } from '$lib/sources';
+  import type { Writable } from 'svelte/store';
   import { get } from 'svelte/store';
+  import type maplibregl from 'maplibre-gl';
+
+  interface Props {
+    sourceStore?: Writable<string>;
+    adminStore?: Writable<number>;
+    mapStoreOverride?: Writable<maplibregl.Map | null>;
+  }
+
+  let {
+    sourceStore = globalSource,
+    adminStore = globalAdmin,
+    mapStoreOverride = globalMapStore,
+  }: Props = $props();
+
+  const isGlobal = $derived(sourceStore === globalSource);
 
   let counts: Record<number, number | null> = $state(
     Object.fromEntries(ADMIN_LEVELS.map((l) => [l, null])),
@@ -12,7 +33,7 @@
 
   $effect(() => {
     const iso3 = $selectedIso3;
-    const source = $selectedSource;
+    const source = $sourceStore;
     const sourceLevels = getLevelsForSource(source);
 
     // Levels not in this source are immediately 0; source levels start as null (loading)
@@ -34,16 +55,16 @@
       sourceLevels.map((level) => getAdminCount(source, level, iso3).then((n) => ({ level, n }))),
     ).then((results) => {
       if (cancelled) return;
-      const current = get(selectedAdmin);
+      const current = get(adminStore);
       const currentCount = results.find((r) => r.level === current)?.n ?? 0;
       if (currentCount === 0) {
         const best = [...results].reverse().find((r) => r.n > 0);
         if (!best) return;
-        selectedAdmin.set(best.level);
+        adminStore.set(best.level);
       }
-      const map = get(mapStore);
+      const map = get(mapStoreOverride);
       if (!map) return;
-      applyAdminFilter(map, iso3);
+      applyAdminFilter(map, iso3, get(sourceStore), get(adminStore));
     });
 
     return () => {
@@ -53,19 +74,23 @@
 
   function onSelect(e: Event) {
     const level = Number((e.target as HTMLSelectElement).value);
-    selectedAdmin.set(level);
+    adminStore.set(level);
 
-    const map = get(mapStore);
+    const map = get(mapStoreOverride);
     const iso3 = get(selectedIso3);
     if (!map || !iso3) return;
 
-    applyAdminFilter(map, iso3);
+    applyAdminFilter(map, iso3, get(sourceStore), level);
   }
 </script>
 
 <div class="field">
-  <label for="admin-select">Admin Level</label>
-  <select id="admin-select" value={$selectedAdmin} onchange={onSelect}>
+  <label for="admin-select-{isGlobal ? 'global' : 'right'}">Admin Level</label>
+  <select
+    id="admin-select-{isGlobal ? 'global' : 'right'}"
+    value={$adminStore}
+    onchange={onSelect}
+  >
     {#each ADMIN_LEVELS.filter((l) => counts[l] !== 0) as level (level)}
       <option value={level}>
         Admin {level}{counts[level] !== null ? ` (${counts[level]})` : ''}
