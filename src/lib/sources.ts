@@ -27,7 +27,7 @@ export const ADMIN_SOURCES = [
   },
   {
     id: 'salb',
-    label: 'UN GIS',
+    label: 'UNGIS',
     levels: [1, 2] as AdminLevel[],
     nameField: 'adm{level}nm',
     codeField: 'adm{level}cd',
