@@ -23,6 +23,15 @@ export function adminLayersForSource(
       paint: { 'fill-color': '#4a90d9', 'fill-opacity': 0.15 },
     },
     {
+      id: `${sourceId}-adm${level}-hover`,
+      type: 'fill',
+      source,
+      'source-layer': sourceLayer,
+      filter: ['==', ['get', countryCodeField], ''],
+      layout: { visibility: 'none' },
+      paint: { 'fill-color': '#2060a0', 'fill-opacity': 0.35 },
+    },
+    {
       id: `${sourceId}-adm${level}-line`,
       type: 'line',
       source,

@@ -21,6 +21,7 @@ export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
     for (const l of src.levels) {
       if (src.id === activeSource && l === activeLevel) {
         map.setLayoutProperty(`${src.id}-adm${l}-fill`, 'visibility', 'visible');
+        map.setLayoutProperty(`${src.id}-adm${l}-hover`, 'visibility', 'visible');
         map.setLayoutProperty(`${src.id}-adm${l}-line`, 'visibility', 'visible');
         map.setLayoutProperty(
           `${src.id}-adm${l}-label`,
@@ -28,6 +29,7 @@ export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
           showLabels ? 'visible' : 'none',
         );
         map.setFilter(`${src.id}-adm${l}-fill`, ['==', ['get', src.countryCodeField], iso3]);
+        map.setFilter(`${src.id}-adm${l}-hover`, ['==', ['get', src.countryCodeField], '']);
         map.setFilter(`${src.id}-adm${l}-line`, ['==', ['get', src.countryCodeField], iso3]);
         map.setFilter(`${src.id}-adm${l}-label`, ['==', ['get', src.countryCodeField], iso3]);
       }
@@ -44,9 +46,11 @@ export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
       for (const l of src.levels) {
         if (src.id !== activeSource || l !== activeLevel) {
           map.setLayoutProperty(`${src.id}-adm${l}-fill`, 'visibility', 'none');
+          map.setLayoutProperty(`${src.id}-adm${l}-hover`, 'visibility', 'none');
           map.setLayoutProperty(`${src.id}-adm${l}-line`, 'visibility', 'none');
           map.setLayoutProperty(`${src.id}-adm${l}-label`, 'visibility', 'none');
           map.setFilter(`${src.id}-adm${l}-fill`, ['==', ['get', src.countryCodeField], '']);
+          map.setFilter(`${src.id}-adm${l}-hover`, ['==', ['get', src.countryCodeField], '']);
           map.setFilter(`${src.id}-adm${l}-line`, ['==', ['get', src.countryCodeField], '']);
           map.setFilter(`${src.id}-adm${l}-label`, ['==', ['get', src.countryCodeField], '']);
         }
