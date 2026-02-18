@@ -12,9 +12,11 @@ npm run check        # Type-check with svelte-check
 npm run lint         # Check formatting (prettier) and lint (eslint)
 npm run format       # Auto-format with prettier
 
-npm run download     # Download all data (WFP boundaries + M49 parquet)
-npm run download:wfp # Download WFP boundaries via scripts/wfp.sh
-npm run download:m49 # Scrape UN M49 table and write static/parquet/m49.parquet
+npm run download        # Download all data (m49 first, then OCHA, WFP, UNHCR)
+npm run download:m49   # Scrape UN M49 table and write static/parquet/m49.parquet
+npm run download:ocha  # Download OCHA boundaries via scripts/ocha.sh
+npm run download:wfp   # Download WFP boundaries via scripts/wfp.sh
+npm run download:unhcr # Download UNHCR boundaries via scripts/unhcr.sh
 
 npm run sync         # Sync pmtiles + parquet to Cloudflare R2
 ```
@@ -39,9 +41,14 @@ Uses `adapter-auto` which detects the deployment target; may need replacing with
 
 ## Data pipeline
 
-- `scripts/wfp.sh` — downloads WFP boundary PMTiles
 - `scripts/m49.py` — scrapes the UN M49 country table and writes `static/parquet/m49.parquet` (via a temp CSV + DuckDB)
+- `scripts/ocha.sh` — downloads OCHA boundaries (admin levels 1–4) from GDB, reprojects to EPSG:4326, writes parquet + PMTiles
+- `scripts/wfp.sh` — downloads WFP boundary parquet files, reprojects to EPSG:4326, writes parquet + PMTiles
+- `scripts/unhcr.sh` — downloads UNHCR boundaries (admin levels 1–2) from ESRI JSON, reprojects to EPSG:4326, writes parquet + PMTiles
+- All scripts use `gdal vector pipeline` with `make-valid`, `reproject`, and `set-field-type` steps before writing
+- Label PMTiles use `--drop-rate=1` and `--no-feature-limit` to preserve all label points
 - Parquet and PMTiles files are synced to Cloudflare R2 via `npm run sync`
+- Admin levels go up to 4 across all sources (OCHA, WFP, UNHCR)
 
 ## UI conventions
 
