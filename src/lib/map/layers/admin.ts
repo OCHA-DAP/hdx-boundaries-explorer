@@ -24,12 +24,12 @@ export function adminLayersForSource(
     },
     {
       id: `${sourceId}-adm${level}-hover`,
-      type: 'fill',
+      type: 'line',
       source,
       'source-layer': sourceLayer,
       filter: ['==', ['get', countryCodeField], ''],
       layout: { visibility: 'none' },
-      paint: { 'fill-color': '#2060a0', 'fill-opacity': 0.35 },
+      paint: { 'line-color': '#2060a0', 'line-width': 3 },
     },
     {
       id: `${sourceId}-adm${level}-line`,
