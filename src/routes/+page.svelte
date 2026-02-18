@@ -16,7 +16,7 @@
 <div class="map-root">
   <div bind:this={mapContainer} class="map"></div>
   <Panel>
-    <h1>HDX Boundaries Explorer</h1>
+    <h1>HDX Boundaries Explorer <span class="beta">beta</span></h1>
     <p class="subtitle">For internal use only</p>
     <CountrySelect />
     <SourceSelect />
@@ -54,6 +54,20 @@
   .map {
     width: 100%;
     height: 100%;
+  }
+
+  h1 .beta {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #fff;
+    background: #e8621a;
+    border-radius: 3px;
+    padding: 2px 5px 0;
+    vertical-align: middle;
+    position: relative;
+    top: -2px;
   }
 
   .subtitle {
