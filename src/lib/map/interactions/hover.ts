@@ -94,7 +94,7 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
   });
 
   selectedSource.subscribe((newSource) => {
-    if (!lastPoint || !lastLngLat || get(labelsEnabled)) return;
+    if (!lastPoint || !lastLngLat) return;
 
     const level = get(selectedAdmin);
     const srcDef = ADMIN_SOURCES.find((s) => s.id === newSource);
@@ -104,10 +104,25 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
     const sourceId = `${newSource}-adm${level}`;
     const point = lastPoint;
     const lngLat = lastLngLat;
+    const codeField = srcDef.codeField.replace('{level}', String(level));
+    const labels = get(labelsEnabled);
 
     const tryUpdate = () => {
       const features = map.queryRenderedFeatures(point, { layers: [layerId] });
       if (!features.length) return false;
+
+      // Restore hover highlight for the new source
+      const codeValue = features[0].properties?.[codeField];
+      if (codeValue != null) {
+        map.setFilter(`${newSource}-adm${level}-hover`, [
+          '==',
+          ['get', codeField],
+          String(codeValue),
+        ]);
+      }
+
+      if (labels) return true;
+
       const html = buildPopupHtml(features[0].properties ?? {}, srcDef, level);
       if (!html) {
         popup.remove();
@@ -117,8 +132,8 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
       return true;
     };
 
-    if (tryUpdate()) return;
-
+    // Always defer to next render so applyAdminFilter (called after selectedSource.set)
+    // runs first and doesn't overwrite our hover filter.
     const onRender = () => {
       if (!map.isSourceLoaded(sourceId)) return;
       map.off('render', onRender);
@@ -135,6 +150,15 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
         if (!e.features?.length) return;
         lastPoint = e.point;
         lastLngLat = e.lngLat;
+        const codeField = src.codeField.replace('{level}', String(level));
+        const codeValue = e.features[0].properties?.[codeField];
+        if (codeValue != null) {
+          map.setFilter(`${src.id}-adm${level}-hover`, [
+            '==',
+            ['get', codeField],
+            String(codeValue),
+          ]);
+        }
         if (get(labelsEnabled)) return;
         const html = buildPopupHtml(e.features[0].properties ?? {}, src, level);
         if (!html) return;
@@ -145,6 +169,7 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
       map.on('mouseleave', layerId, () => {
         map.getCanvas().style.cursor = '';
         popup.remove();
+        map.setFilter(`${src.id}-adm${level}-hover`, ['==', ['get', src.countryCodeField], '']);
         lastPoint = null;
         lastLngLat = null;
       });
