@@ -33,6 +33,14 @@ export const ADMIN_SOURCES = [
     codeField: 'adm{level}cd',
     countryCodeField: 'iso3cd',
   },
+  {
+    id: 'fao',
+    label: 'FAO',
+    levels: [1, 2] as AdminLevel[],
+    nameField: 'gaul{level}_name',
+    codeField: 'gaul{level}_code',
+    countryCodeField: 'iso3_code',
+  },
 ];
 
 export function getLevelsForSource(sourceId: string): AdminLevel[] {

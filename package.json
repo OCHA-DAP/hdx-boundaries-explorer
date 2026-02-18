@@ -15,13 +15,14 @@
     "sync": "npm run sync:pmtiles && npm run sync:parquet",
     "sync:pmtiles": "rclone sync --progress --s3-chunk-size=50M --include=*.pmtiles static/pmtiles r2://hdx-boundaries-explorer/pmtiles",
     "sync:parquet": "rclone sync --progress --s3-chunk-size=50M --include=*.parquet static/parquet r2://hdx-boundaries-explorer/parquet",
-    "download": "npm run download:m49 && npm run download:ocha && npm run download:wfp && npm run download:unhcr && npm run download:osm && npm run download:salb",
+    "download": "npm run download:m49 && npm run download:ocha && npm run download:wfp && npm run download:unhcr && npm run download:osm && npm run download:salb && npm run download:fao",
     "download:m49": "python3 scripts/m49.py",
     "download:ocha": "./scripts/ocha.sh",
     "download:wfp": "./scripts/wfp.sh",
     "download:unhcr": "./scripts/unhcr.sh",
     "download:osm": "./scripts/osm.sh",
     "download:salb": "bash scripts/salb.sh",
+    "download:fao": "bash scripts/fao.sh",
     "update": "npx npm-check-updates -u && npm install"
   },
   "devDependencies": {
