@@ -27,9 +27,9 @@ export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
           'visibility',
           showLabels ? 'visible' : 'none',
         );
-        map.setFilter(`${src.id}-adm${l}-fill`, ['==', ['get', 'iso3'], iso3]);
-        map.setFilter(`${src.id}-adm${l}-line`, ['==', ['get', 'iso3'], iso3]);
-        map.setFilter(`${src.id}-adm${l}-label`, ['==', ['get', 'iso3'], iso3]);
+        map.setFilter(`${src.id}-adm${l}-fill`, ['==', ['get', src.countryCodeField], iso3]);
+        map.setFilter(`${src.id}-adm${l}-line`, ['==', ['get', src.countryCodeField], iso3]);
+        map.setFilter(`${src.id}-adm${l}-label`, ['==', ['get', src.countryCodeField], iso3]);
       }
     }
   }
@@ -46,9 +46,9 @@ export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
           map.setLayoutProperty(`${src.id}-adm${l}-fill`, 'visibility', 'none');
           map.setLayoutProperty(`${src.id}-adm${l}-line`, 'visibility', 'none');
           map.setLayoutProperty(`${src.id}-adm${l}-label`, 'visibility', 'none');
-          map.setFilter(`${src.id}-adm${l}-fill`, ['==', ['get', 'iso3'], '']);
-          map.setFilter(`${src.id}-adm${l}-line`, ['==', ['get', 'iso3'], '']);
-          map.setFilter(`${src.id}-adm${l}-label`, ['==', ['get', 'iso3'], '']);
+          map.setFilter(`${src.id}-adm${l}-fill`, ['==', ['get', src.countryCodeField], '']);
+          map.setFilter(`${src.id}-adm${l}-line`, ['==', ['get', src.countryCodeField], '']);
+          map.setFilter(`${src.id}-adm${l}-label`, ['==', ['get', src.countryCodeField], '']);
         }
       }
     }

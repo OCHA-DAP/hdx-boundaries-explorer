@@ -5,7 +5,7 @@ export const layers: maplibregl.LayerSpecification[] = [
     id: 'land',
     type: 'fill',
     source: 'land',
-    'source-layer': 'land_polygons',
+    'source-layer': 'osm_land',
     paint: { 'fill-color': '#f0ebe3' },
   },
 ];

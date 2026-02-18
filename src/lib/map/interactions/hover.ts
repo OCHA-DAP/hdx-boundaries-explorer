@@ -1,7 +1,7 @@
+import { labelsEnabled, selectedAdmin, selectedIso3, selectedSource } from '$lib/map/store';
+import { ADMIN_SOURCES } from '$lib/sources';
 import maplibregl from 'maplibre-gl';
 import { get } from 'svelte/store';
-import { ADMIN_SOURCES } from '$lib/sources';
-import { labelsEnabled, selectedAdmin, selectedIso3, selectedSource } from '$lib/map/store';
 
 export function addHoverInteraction(map: maplibregl.Map): void {
   let hoveredId: string | number | null = null;
@@ -10,7 +10,7 @@ export function addHoverInteraction(map: maplibregl.Map): void {
   function clearHover() {
     if (hoveredId !== null) {
       map.setFeatureState(
-        { source: 'countries', sourceLayer: 'bnda_cty', id: hoveredId },
+        { source: 'countries', sourceLayer: 'salb_adm0', id: hoveredId },
         { hover: false },
       );
     }
@@ -30,7 +30,7 @@ export function addHoverInteraction(map: maplibregl.Map): void {
     if (id === hoveredId) return;
     if (hoveredId !== null) {
       map.setFeatureState(
-        { source: 'countries', sourceLayer: 'bnda_cty', id: hoveredId },
+        { source: 'countries', sourceLayer: 'salb_adm0', id: hoveredId },
         { hover: false },
       );
     }
@@ -45,7 +45,7 @@ export function addHoverInteraction(map: maplibregl.Map): void {
     hoveredIso3 = iso3;
     if (hoveredId !== null) {
       map.setFeatureState(
-        { source: 'countries', sourceLayer: 'bnda_cty', id: hoveredId },
+        { source: 'countries', sourceLayer: 'salb_adm0', id: hoveredId },
         { hover: true },
       );
     }

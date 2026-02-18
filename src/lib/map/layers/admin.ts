@@ -8,6 +8,7 @@ export function adminLayersForSource(
   level: AdminLevel,
   nameField: string,
   codeField: string,
+  countryCodeField: string,
 ): maplibregl.LayerSpecification[] {
   const source = `${sourceId}-adm${level}`;
   const sourceLayer = `${sourceId}_adm${level}`;
@@ -17,7 +18,7 @@ export function adminLayersForSource(
       type: 'fill',
       source,
       'source-layer': sourceLayer,
-      filter: ['==', ['get', 'iso3'], ''],
+      filter: ['==', ['get', countryCodeField], ''],
       layout: { visibility: 'none' },
       paint: { 'fill-color': '#4a90d9', 'fill-opacity': 0.15 },
     },
@@ -26,7 +27,7 @@ export function adminLayersForSource(
       type: 'line',
       source,
       'source-layer': sourceLayer,
-      filter: ['==', ['get', 'iso3'], ''],
+      filter: ['==', ['get', countryCodeField], ''],
       layout: { visibility: 'none' },
       paint: { 'line-color': '#2060a0', 'line-width': 1 },
     },
@@ -35,7 +36,7 @@ export function adminLayersForSource(
       type: 'symbol',
       source: `${sourceId}-adm${level}-labels`,
       'source-layer': `${sourceId}_adm${level}_labels`,
-      filter: ['==', ['get', 'iso3'], ''],
+      filter: ['==', ['get', countryCodeField], ''],
       layout: {
         visibility: 'none',
         'text-field': [

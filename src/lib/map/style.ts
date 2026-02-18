@@ -27,16 +27,16 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
   sources: {
     land: {
       type: 'vector',
-      url: pmtiles('land_polygons.pmtiles'),
+      url: pmtiles('osm_land.pmtiles'),
     },
     countries: {
       type: 'vector',
-      url: pmtiles('bnda_cty.pmtiles'),
-      promoteId: { bnda_cty: 'objectid' },
+      url: pmtiles('salb_adm0.pmtiles'),
+      promoteId: { salb_adm0: 'objectid' },
     },
     'country-lines': {
       type: 'vector',
-      url: pmtiles('bndl.pmtiles'),
+      url: pmtiles('salb_lines.pmtiles'),
     },
     ...admSources,
   },
@@ -56,6 +56,7 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
           l,
           src.nameField.replace('{level}', String(l)),
           src.codeField.replace('{level}', String(l)),
+          src.countryCodeField,
         ),
       ),
     ),

@@ -37,7 +37,7 @@ async function loadBboxMap(file: string): Promise<Map<string, Bbox>> {
 
 const mapPromises = new Map<string, Promise<Map<string, Bbox>>>();
 
-export async function getBboxForIso3(iso3: string, file = 'bnda_cty'): Promise<Bbox | null> {
+export async function getBboxForIso3(iso3: string, file = 'salb_adm0'): Promise<Bbox | null> {
   if (!mapPromises.has(file)) {
     mapPromises.set(file, loadBboxMap(file));
   }

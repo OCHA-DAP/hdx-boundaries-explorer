@@ -5,7 +5,7 @@ export const layers: maplibregl.LayerSpecification[] = [
     id: 'country-lines',
     type: 'line',
     source: 'country-lines',
-    'source-layer': 'bndl',
+    'source-layer': 'salb_lines',
     filter: ['==', ['get', 'bdytyp'], '1'],
     paint: {
       'line-color': '#aaaaaa',
@@ -16,7 +16,7 @@ export const layers: maplibregl.LayerSpecification[] = [
     id: 'country-lines-disputed',
     type: 'line',
     source: 'country-lines',
-    'source-layer': 'bndl',
+    'source-layer': 'salb_lines',
     filter: ['in', ['get', 'bdytyp'], ['literal', ['2', '3', '4']]],
     paint: {
       'line-color': '#aaaaaa',
@@ -28,7 +28,7 @@ export const layers: maplibregl.LayerSpecification[] = [
     id: 'country-lines-other',
     type: 'line',
     source: 'country-lines',
-    'source-layer': 'bndl',
+    'source-layer': 'salb_lines',
     filter: ['in', ['get', 'bdytyp'], ['literal', ['8', '9', '99']]],
     paint: {
       'line-color': '#bbbbbb',

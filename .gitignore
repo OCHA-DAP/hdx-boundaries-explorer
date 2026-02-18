@@ -23,6 +23,8 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 # Temp
+/static/parquet
+/static/pmtiles
 /tmp
 
 # Data files
@@ -30,6 +32,8 @@ vite.config.ts.timestamp-*
 *.parquet
 *.pmtiles
 *.pmtiles-journal
+*.gpkg
+*.gpkg-journal
 *.tmp
 
 CLAUDE.md

@@ -21,6 +21,7 @@ gdal vector pipeline \
     --lco COMPRESSION=ZSTD \
     --lco COMPRESSION_LEVEL=15 \
     --lco GEOMETRY_NAME=geometry \
+    --lco SORT_BY_BBOX=YES \
     --lco USE_PARQUET_GEO_TYPES=YES \
     --overwrite
 

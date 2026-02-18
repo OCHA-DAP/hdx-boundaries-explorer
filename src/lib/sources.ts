@@ -7,6 +7,7 @@ export const ADMIN_SOURCES = [
     levels: [1, 2, 3, 4] as AdminLevel[],
     nameField: 'adm{level}_name',
     codeField: 'adm{level}_pcode',
+    countryCodeField: 'iso3',
   },
   {
     id: 'wfp',
@@ -14,6 +15,7 @@ export const ADMIN_SOURCES = [
     levels: [1, 2, 3, 4] as AdminLevel[],
     nameField: 'adm{level}_name',
     codeField: 'source_id',
+    countryCodeField: 'iso3',
   },
   {
     id: 'unhcr',
@@ -21,6 +23,15 @@ export const ADMIN_SOURCES = [
     levels: [1, 2] as AdminLevel[],
     nameField: 'gis_name',
     codeField: 'adm{level}_source_code',
+    countryCodeField: 'iso3',
+  },
+  {
+    id: 'salb',
+    label: 'SALB',
+    levels: [1, 2] as AdminLevel[],
+    nameField: 'adm{level}nm',
+    codeField: 'adm{level}cd',
+    countryCodeField: 'iso3cd',
   },
 ];
 
