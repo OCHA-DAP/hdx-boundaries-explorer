@@ -109,7 +109,10 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
       const features = map.queryRenderedFeatures(point, { layers: [layerId] });
       if (!features.length) return false;
       const html = buildPopupHtml(features[0].properties ?? {}, srcDef, level);
-      if (!html) { popup.remove(); return true; }
+      if (!html) {
+        popup.remove();
+        return true;
+      }
       popup.setLngLat(lngLat).setHTML(html).addTo(map);
       return true;
     };

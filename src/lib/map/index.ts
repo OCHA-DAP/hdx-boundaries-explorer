@@ -1,7 +1,11 @@
 import maplibregl from 'maplibre-gl';
 import { Protocol } from 'pmtiles';
 import { initLabelsToggle } from './admin';
-import { addAdminHoverInteraction, addClickInteraction, addHoverInteraction } from './interactions/index';
+import {
+  addAdminHoverInteraction,
+  addClickInteraction,
+  addHoverInteraction,
+} from './interactions/index';
 import MAP_STYLE from './style';
 import { mapStore } from './store';
 

@@ -22,7 +22,11 @@ export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
       if (src.id === activeSource && l === activeLevel) {
         map.setLayoutProperty(`${src.id}-adm${l}-fill`, 'visibility', 'visible');
         map.setLayoutProperty(`${src.id}-adm${l}-line`, 'visibility', 'visible');
-        map.setLayoutProperty(`${src.id}-adm${l}-label`, 'visibility', showLabels ? 'visible' : 'none');
+        map.setLayoutProperty(
+          `${src.id}-adm${l}-label`,
+          'visibility',
+          showLabels ? 'visible' : 'none',
+        );
         map.setFilter(`${src.id}-adm${l}-fill`, ['==', ['get', 'iso3'], iso3]);
         map.setFilter(`${src.id}-adm${l}-line`, ['==', ['get', 'iso3'], iso3]);
         map.setFilter(`${src.id}-adm${l}-label`, ['==', ['get', 'iso3'], iso3]);
