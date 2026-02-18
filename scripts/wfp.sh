@@ -23,6 +23,7 @@ for level in 1 2 3 4; do
       --lco GEOMETRY_NAME=geometry \
       --lco USE_PARQUET_GEO_TYPES=YES \
       --overwrite
+  rm "$tmp_dl"
 
   # Convert parquet → temp fgb → pmtiles, then delete fgb
   tmp_fgb="tmp/${name}.fgb"
@@ -36,7 +37,6 @@ for level in 1 2 3 4; do
     --no-tile-size-limit \
     --simplify-only-low-zooms \
     "$tmp_fgb"
-
   rm "$tmp_fgb"
 
   # Generate Maximum Inscribed Circle label points → pmtiles
@@ -53,9 +53,7 @@ for level in 1 2 3 4; do
     --output "static/pmtiles/${name}_labels.pmtiles" \
     --layer "${name}_labels" \
     --force \
-    --drop-rate=1 \
     --maximum-zoom=g \
-    --no-feature-limit \
     --no-tile-size-limit \
     "$tmp_labels"
   rm "$tmp_labels"

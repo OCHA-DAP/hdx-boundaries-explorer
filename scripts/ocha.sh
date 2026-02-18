@@ -46,7 +46,6 @@ for level in 1 2 3 4; do
     --no-tile-size-limit \
     --simplify-only-low-zooms \
     "$tmp_fgb"
-
   rm "$tmp_fgb"
 
   # Generate Maximum Inscribed Circle label points → pmtiles
@@ -63,9 +62,7 @@ for level in 1 2 3 4; do
     --output "static/pmtiles/${name}_labels.pmtiles" \
     --layer "${name}_labels" \
     --force \
-    --drop-rate=1 \
     --maximum-zoom=g \
-    --no-feature-limit \
     --no-tile-size-limit \
     "$tmp_labels"
   rm "$tmp_labels"

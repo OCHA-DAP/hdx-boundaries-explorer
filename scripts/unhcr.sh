@@ -9,9 +9,8 @@ trap 'rm -rf tmp' EXIT
 for level in 1 2; do
   name="unhcr_adm${level}"
   url="${BASE_URL}/wrl_polbnd_adm${level}_a_unhcr/FeatureServer/0"
-  parquet="static/parquet/${name}.parquet"
-
   query_url="${url}/query?where=gis_status%3D14&orderByFields=objectid&resultRecordCount=1&outFields=*&f=json"
+  parquet="static/parquet/${name}.parquet"
 
   # Download as Parquet, reproject to 4326, and make geometries valid
   gdal vector pipeline \
@@ -38,7 +37,6 @@ for level in 1 2; do
     --no-tile-size-limit \
     --simplify-only-low-zooms \
     "$tmp_fgb"
-
   rm "$tmp_fgb"
 
   # Generate Maximum Inscribed Circle label points → pmtiles
@@ -55,9 +53,7 @@ for level in 1 2; do
     --output "static/pmtiles/${name}_labels.pmtiles" \
     --layer "${name}_labels" \
     --force \
-    --drop-rate=1 \
     --maximum-zoom=g \
-    --no-feature-limit \
     --no-tile-size-limit \
     "$tmp_labels"
   rm "$tmp_labels"
