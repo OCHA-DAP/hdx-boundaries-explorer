@@ -1,6 +1,6 @@
 import type maplibregl from 'maplibre-gl';
 
-export const ADMIN_LEVELS = [1, 2, 3, 4, 5] as const;
+export const ADMIN_LEVELS = [1, 2, 3, 4] as const;
 export type AdminLevel = (typeof ADMIN_LEVELS)[number];
 
 export function adminLayersForSource(

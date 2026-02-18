@@ -13,18 +13,22 @@ curl -fL "$url" -o "tmp/ocha.gdb.zip"
 
 # Extract
 unzip -q "tmp/ocha.gdb.zip" -d tmp/
+rm "tmp/ocha.gdb.zip"
 gdb=$(find tmp -maxdepth 2 -name "*.gdb" -type d | head -1)
 
-for level in 1 2 3 4 5; do
+for level in 1 2 3 4; do
   name="ocha_adm${level}"
   layer="admin${level}"
   parquet="static/parquet/${name}.parquet"
 
   # Make geometries valid and write compressed parquet directly from GDB
   gdal vector pipeline \
-    ! read "$gdb" --input-layer-name "$layer" \
+    ! read "$gdb" --input-layer "$layer" \
+    ! reproject --dst-crs EPSG:4326 \
+    ! set-field-type --src-field-type DateTime --dst-field-type Date \
     ! make-valid \
     ! write "$parquet" \
+      --config OGR_ORGANIZE_POLYGONS ONLY_CCW \
       --lco COMPRESSION=ZSTD \
       --lco COMPRESSION_LEVEL=15 \
       --lco USE_PARQUET_GEO_TYPES=YES \
@@ -59,7 +63,9 @@ for level in 1 2 3 4 5; do
     --output "static/pmtiles/${name}_labels.pmtiles" \
     --layer "${name}_labels" \
     --force \
+    --drop-rate=1 \
     --maximum-zoom=g \
+    --no-feature-limit \
     --no-tile-size-limit \
     "$tmp_labels"
   rm "$tmp_labels"

@@ -13,8 +13,10 @@ for level in 1 2 3 4; do
   curl -fL "https://data.earthobservation.vam.wfp.org/public-share/boundaries/ge_adm${level}.parquet" -o "$tmp_dl"
   gdal vector pipeline \
     ! read "$tmp_dl" \
-    ! make-valid \
+    ! reproject --dst-crs EPSG:4326 \
     ! set-field-type --src-field-type Binary --dst-field-type String \
+    ! set-field-type --src-field-type DateTime --dst-field-type Date \
+    ! make-valid \
     ! write "$parquet" \
       --lco COMPRESSION=ZSTD \
       --lco COMPRESSION_LEVEL=15 \
@@ -51,7 +53,9 @@ for level in 1 2 3 4; do
     --output "static/pmtiles/${name}_labels.pmtiles" \
     --layer "${name}_labels" \
     --force \
+    --drop-rate=1 \
     --maximum-zoom=g \
+    --no-feature-limit \
     --no-tile-size-limit \
     "$tmp_labels"
   rm "$tmp_labels"

@@ -30,5 +30,6 @@ vite.config.ts.timestamp-*
 *.parquet
 *.pmtiles
 *.pmtiles-journal
+*.tmp
 
 CLAUDE.md

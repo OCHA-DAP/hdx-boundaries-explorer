@@ -4,7 +4,7 @@ export const ADMIN_SOURCES = [
   {
     id: 'ocha',
     label: 'OCHA',
-    levels: [1, 2, 3, 4, 5] as AdminLevel[],
+    levels: [1, 2, 3, 4] as AdminLevel[],
     nameField: 'adm{level}_name',
     codeField: 'adm{level}_pcode',
   },

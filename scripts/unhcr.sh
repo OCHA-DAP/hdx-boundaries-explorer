@@ -17,6 +17,7 @@ for level in 1 2; do
   gdal vector pipeline \
     ! read "ESRIJSON:${query_url}" \
     ! reproject --dst-crs EPSG:4326 \
+    ! set-field-type --src-field-type DateTime --dst-field-type Date \
     ! make-valid \
     ! write "$parquet" \
       --config OGR_ORGANIZE_POLYGONS ONLY_CCW \
@@ -54,7 +55,9 @@ for level in 1 2; do
     --output "static/pmtiles/${name}_labels.pmtiles" \
     --layer "${name}_labels" \
     --force \
+    --drop-rate=1 \
     --maximum-zoom=g \
+    --no-feature-limit \
     --no-tile-size-limit \
     "$tmp_labels"
   rm "$tmp_labels"
