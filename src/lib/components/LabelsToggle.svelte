@@ -2,13 +2,30 @@
   import { labelsEnabled } from '$lib/map/store';
 </script>
 
-<label class="toggle">
-  <input type="checkbox" bind:checked={$labelsEnabled} />
-  <span class="track"><span class="thumb"></span></span>
-  <span class="text">Labels</span>
-</label>
+<div class="field">
+  <span class="field-label">Inspect features</span>
+  <label class="toggle">
+    <input type="checkbox" bind:checked={$labelsEnabled} />
+    <span class="track"><span class="thumb"></span></span>
+    <span class="text">{$labelsEnabled ? 'Labels' : 'Hover'}</span>
+  </label>
+</div>
 
 <style>
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .field-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #666;
+  }
+
   .toggle {
     display: flex;
     align-items: center;

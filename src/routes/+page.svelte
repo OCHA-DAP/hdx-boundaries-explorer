@@ -30,7 +30,7 @@
     padding: 6px 10px;
     font-family: sans-serif;
     font-size: 13px;
-    background: rgba(0, 0, 0, 0.75);
+    background: rgba(0, 0, 0, 1);
     color: #fff;
     border-radius: 4px;
     pointer-events: none;
@@ -43,6 +43,27 @@
   :global(.feature-tooltip .feature-tooltip-code) {
     font-size: 11px;
     opacity: 0.7;
+  }
+
+  :global(.feature-tooltip .feature-tooltip-props) {
+    margin-top: 6px;
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  :global(.feature-tooltip .feature-tooltip-key) {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 10px;
+    padding-right: 8px;
+    vertical-align: top;
+    white-space: nowrap;
+  }
+
+  :global(.feature-tooltip .feature-tooltip-val) {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 10px;
+    vertical-align: top;
+    word-break: break-all;
   }
 
   .map-root {

@@ -24,7 +24,7 @@
   }
 
   function onKeydown(e: KeyboardEvent) {
-    if (e.target instanceof HTMLInputElement) return;
+    if (e.target instanceof HTMLInputElement && e.target.type !== 'checkbox') return;
     if (e.key !== '[' && e.key !== ']') return;
 
     const idx = ADMIN_SOURCES.findIndex((s) => s.id === get(selectedSource));
