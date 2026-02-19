@@ -18,6 +18,14 @@ export const ADMIN_SOURCES = [
     countryCodeField: 'iso3',
   },
   {
+    id: 'unicef',
+    label: 'UNICEF',
+    levels: [1, 2, 3, 4] as AdminLevel[],
+    nameField: 'name',
+    codeField: 'Source_ID',
+    countryCodeField: 'adm0_ucode',
+  },
+  {
     id: 'unhcr',
     label: 'UNHCR',
     levels: [1, 2] as AdminLevel[],

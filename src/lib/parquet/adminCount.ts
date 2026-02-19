@@ -20,7 +20,7 @@ function loadCounts(source: string, level: AdminLevel): Promise<Map<string, numb
           onComplete(rows) {
             const counts = new Map<string, number>();
             for (const row of rows as Array<Record<string, string>>) {
-              const key = row[countryCodeField];
+              const key = row[countryCodeField]?.slice(0, 3);
               counts.set(key, (counts.get(key) ?? 0) + 1);
             }
             resolve(counts);
