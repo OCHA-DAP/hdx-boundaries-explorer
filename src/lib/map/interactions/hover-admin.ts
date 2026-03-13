@@ -19,7 +19,7 @@ function buildPopupHtml(
     : String(name);
 
   const rows = Object.entries(props)
-    .filter(([k, v]) => v != null && typeof v === 'string' ? v.trim() !== '' : v !== '')
+    .filter(([k, v]) => (v != null && typeof v === 'string' ? v.trim() !== '' : v !== ''))
     .map(
       ([k, v]) =>
         `<tr><td class="feature-tooltip-key">${k}</td><td class="feature-tooltip-val">${String(v)}</td></tr>`,

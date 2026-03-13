@@ -6,8 +6,8 @@ import {
   addClickInteraction,
   addHoverInteraction,
 } from './interactions/index';
-import MAP_STYLE from './style';
 import { mapStore } from './store';
+import MAP_STYLE from './style';
 
 export function initMap(container: HTMLDivElement): () => void {
   const protocol = new Protocol();

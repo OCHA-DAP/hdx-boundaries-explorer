@@ -35,14 +35,17 @@ for level in 1 2 3 4; do
   rm "$tmp_fgb"
 
   tmp_labels="tmp/${name}_labels.fgb"
+  tmp_labels_parquet="tmp/${name}_labels.parquet"
   duckdb -c "
     LOAD spatial;
     COPY (
       SELECT * EXCLUDE (geometry, geometry_bbox),
              ST_MaximumInscribedCircle(geometry).center AS geometry
-      FROM read_parquet('${parquet}')
-    ) TO '${tmp_labels}' WITH (FORMAT GDAL, DRIVER 'FlatGeobuf');
+      FROM '${parquet}'
+    ) TO '${tmp_labels_parquet}';
   "
+  gdal vector convert "$tmp_labels_parquet" "$tmp_labels" --overwrite
+  rm "$tmp_labels_parquet"
   tippecanoe \
     --output "static/pmtiles/${name}_labels.pmtiles" \
     --layer "${name}_labels" \
