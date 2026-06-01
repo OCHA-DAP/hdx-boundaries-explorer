@@ -35,5 +35,3 @@ vite.config.ts.timestamp-*
 *.gpkg
 *.gpkg-journal
 *.tmp
-
-CLAUDE.md

@@ -6,7 +6,7 @@ trap 'rm -rf tmp' EXIT
 
 for level in 1 2; do
   name="fao_adm${level}"
-  url="https://storage.googleapis.com/fao-maps-catalog-data/boundaries/GAUL_2024_L${level}.zip"
+  url="https://storage.googleapis.com/fao-maps-catalog-data/boundaries/GAUL_2025_L${level}.zip"
   parquet="static/parquet/${name}.parquet"
 
   curl -fL "$url" -o "tmp/fao_l${level}.zip"
@@ -19,6 +19,7 @@ for level in 1 2; do
     ! reproject --dst-crs EPSG:4326 \
     ! set-field-type --src-field-type DateTime --dst-field-type Date \
     ! make-valid \
+    ! filter --where "OGR_GEOMETRY IS NOT NULL" \
     ! write "$parquet" \
       --config OGR_ORGANIZE_POLYGONS ONLY_CCW \
       --lco COMPRESSION=ZSTD \

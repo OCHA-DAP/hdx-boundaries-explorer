@@ -45,9 +45,9 @@ export const ADMIN_SOURCES = [
     id: 'fao',
     label: 'FAO',
     levels: [1, 2] as AdminLevel[],
-    nameField: 'gaul{level}_name',
-    codeField: 'gaul{level}_code',
-    countryCodeField: 'iso3_code',
+    nameField: 'GAUL{level}_NAME',
+    codeField: 'GAUL{level}_CODE',
+    countryCodeField: 'ISO3_CODE',
   },
   {
     id: 'wb',
