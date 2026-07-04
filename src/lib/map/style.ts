@@ -1,9 +1,9 @@
 import { ADMIN_SOURCES } from "$lib/sources";
 import type maplibregl from "maplibre-gl";
+import positron from "./basemap/positron.json";
 import { adminLayersForSource } from "./layers/admin";
 import { layers as countriesLayers } from "./layers/countries";
 import { layers as countryLineLayers } from "./layers/country-lines";
-import { layers as landLayers } from "./layers/land";
 
 const PMTILES_BASE =
   import.meta.env.VITE_PMTILES_BASE ?? "https://hdx-boundaries-explorer.fieldmaps.io/pmtiles";
@@ -24,11 +24,10 @@ const admSources = Object.fromEntries(
 
 const MAP_STYLE: maplibregl.StyleSpecification = {
   version: 8,
+  sprite: positron.sprite,
+  glyphs: positron.glyphs,
   sources: {
-    land: {
-      type: "vector",
-      url: pmtiles("osm_land.pmtiles"),
-    },
+    ...(positron.sources as maplibregl.StyleSpecification["sources"]),
     countries: {
       type: "vector",
       url: pmtiles("salb_adm0.pmtiles"),
@@ -41,12 +40,7 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
     ...admSources,
   },
   layers: [
-    {
-      id: "background",
-      type: "background",
-      paint: { "background-color": "#a8d3ea" },
-    },
-    ...landLayers,
+    ...(positron.layers as maplibregl.LayerSpecification[]),
     ...countriesLayers,
     ...countryLineLayers,
     ...ADMIN_SOURCES.flatMap((src) =>

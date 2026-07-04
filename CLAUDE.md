@@ -19,6 +19,7 @@ npm run download:ocha        # Download OCHA boundaries via scripts/ocha.sh
 npm run download:wfp         # Download WFP boundaries via scripts/wfp.sh
 npm run download:unhcr       # Download UNHCR boundaries via scripts/unhcr.sh
 npm run download:stats       # Compute per-source/level comparison stats (static/parquet/source_stats.parquet)
+npm run download:basemap     # Vendor OpenFreeMap's positron style, stripped of boundary layers (src/lib/map/basemap/positron.json)
 
 npm run sync         # Sync pmtiles + parquet to Cloudflare R2
 ```
@@ -32,7 +33,8 @@ There are no tests configured yet.
 - `src/routes/+page.svelte` — the single-page app: a fixed-width `CountrySidebar` on the left (country nav list, plus the labels toggle and decision panel for whichever country is selected), the map filling the rest, and a bottom-docked `StatsPanel` comparison drawer overlaid on the map. The selected country is driven by a `?country=ISO3` query param rather than a dynamic route segment (avoids prerendering one static page per country under `adapter-static`)
 - `src/lib/` — shared components and utilities, importable via `$lib/` alias
 - `src/lib/components/` — UI components (CountrySidebar — the left nav, embeds LabelsToggle/DecisionPanel for the selected country and handles `[`/`]` source-cycling — plus RelevanceBadge, StatsPanel/StatsComparisonTable). There is no dedicated source/admin-level dropdown; picking a source or level happens by clicking a row/cell in StatsComparisonTable
-- `src/lib/map/` — MapLibre initialisation, layers, interactions, store. `src/lib/map/admin.ts` exports `selectCountry(map, iso3)`, the shared "pick a country" sequence used by both `CountrySidebar`'s row clicks and the page's initial query-param handling, and `selectSource`/`selectSourceLevel` for switching source/level (both resolve to a level that actually has data for the current country, via `source_stats.parquet`)
+- `src/lib/map/` — MapLibre initialisation, layers, interactions, store. `src/lib/map/admin.ts` exports `selectCountry(map, iso3)`, the shared "pick a country" sequence used by both `CountrySidebar`'s row clicks and the page's initial query-param handling, and `selectSource`/`selectSourceLevel` for switching source/level (both resolve to a level that actually has data for the current country, via `source_stats.parquet`); it also exports `fitCountryBounds(map, iso3)`, reused by a `map.on("resize", ...)` listener (wired in `src/lib/map/index.ts`) so the camera re-fits if the map's container is resized after a country is already selected
+- `src/lib/map/basemap/positron.json` — a vendored, committed copy of OpenFreeMap's `positron` style (see `scripts/basemap.sh`), with all `source-layer: "boundary"` layers (international, subnational, disputed) stripped out so they don't compete with this app's own boundary overlays. `src/lib/map/style.ts` merges its `sources`/`layers`/`sprite`/`glyphs` in as the base map, with `countries`/`country-lines`/per-source admin layers stacked on top. Re-run `npm run download:basemap` to refresh it from upstream (OpenFreeMap's style has proven fairly stable — a handful of commits a year post-launch, per repo history)
 - `src/lib/parquet/` — client-side helpers for querying parquet files with `hyparquet` (a pure-JS reader; there is no DuckDB-WASM/SQL engine in the browser — aggregate values like vertex counts are precomputed at data-build time instead, see Data pipeline)
 - `src/lib/sheet/` — reads the team's boundary-decision Google Sheet (published-to-web CSV, read-only) via a hand-rolled RFC4180 `parseCsv` and `decisions.ts`
 - `src/lib/sources.ts` — defines the 7 available boundary sources (OCHA, WFP, UNICEF, UNHCR, UNGIS/SALB, FAO, World Bank) and their admin levels
@@ -50,6 +52,7 @@ Uses `adapter-static` (fully static site, deployed to GitHub Pages; `paths.base`
 - `scripts/wfp.sh` — downloads WFP boundary parquet files, reprojects to EPSG:4326, writes parquet + PMTiles
 - `scripts/unhcr.sh` — downloads UNHCR boundaries (admin levels 1–2) from ESRI JSON, reprojects to EPSG:4326, writes parquet + PMTiles
 - `scripts/stats.sh` — computes per-source/per-level comparison stats (feature counts, vertex counts via DuckDB spatial `ST_NPoints`) from the already-downloaded boundary parquet files, writing `static/parquet/source_stats.parquet`. Must run last, after every `download:<source>` script.
+- `scripts/basemap.sh` — fetches OpenFreeMap's `positron` style JSON, strips layers with `source-layer: "boundary"` via `jq`, and writes the committed `src/lib/map/basemap/positron.json` (not gitignored, unlike the other pipeline outputs — it's small and meant to be reviewed/diffed like source)
 - All boundary-download scripts use `gdal vector pipeline` with `make-valid`, `reproject`, and `set-field-type` steps before writing
 - Label PMTiles use `--drop-rate=1` and `--no-feature-limit` to preserve all label points
 - Parquet and PMTiles files are synced to Cloudflare R2 via `npm run sync`

@@ -55,6 +55,7 @@ export function adminLayersForSource(
           ["case", ["has", codeField], ["concat", "\n", ["get", codeField]], ""],
           { "font-scale": 0.75 },
         ],
+        "text-font": ["Noto Sans Regular"],
         "text-size": 11,
         "text-anchor": "center",
         "text-max-width": 8,
