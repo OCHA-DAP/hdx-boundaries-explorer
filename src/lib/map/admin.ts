@@ -1,7 +1,30 @@
+import { getBboxForIso3 } from "$lib/parquet/bbox";
 import { ADMIN_SOURCES } from "$lib/sources";
 import type maplibregl from "maplibre-gl";
 import { get } from "svelte/store";
 import { labelsEnabled, selectedAdmin, selectedIso3, selectedSource } from "./store";
+
+// Sets the selected country, fits the map to its bbox, and applies the current
+// source/level filter. Shared by CountrySidebar's row clicks and the page's
+// initial ?country= query-param handling so both go through the same sequence.
+export async function selectCountry(map: maplibregl.Map | null, iso3: string): Promise<void> {
+  selectedIso3.set(iso3);
+  if (!iso3) return;
+
+  const bbox = await getBboxForIso3(iso3);
+  if (!bbox) return;
+  if (!map) return;
+
+  applyAdminFilter(map, iso3);
+
+  map.fitBounds(
+    [
+      [bbox[0], bbox[1]],
+      [bbox[2], bbox[3]],
+    ],
+    { padding: 50 },
+  );
+}
 
 let cancelPendingHide: (() => void) | null = null;
 

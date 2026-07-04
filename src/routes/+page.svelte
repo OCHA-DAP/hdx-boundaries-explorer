@@ -1,28 +1,41 @@
 <script lang="ts">
-  import AdminSelect from "$lib/components/AdminSelect.svelte";
-  import CountrySelect from "$lib/components/CountrySelect.svelte";
-  import LabelsToggle from "$lib/components/LabelsToggle.svelte";
-  import Panel from "$lib/components/Panel.svelte";
-  import SourceSelect from "$lib/components/SourceSelect.svelte";
+  import { page } from "$app/state";
+  import CountrySidebar from "$lib/components/CountrySidebar.svelte";
+  import StatsPanel from "$lib/components/StatsPanel.svelte";
   import { initMap } from "$lib/map";
+  import { selectCountry } from "$lib/map/admin";
+  import { mapStore, selectedIso3 } from "$lib/map/store";
   import "maplibre-gl/dist/maplibre-gl.css";
   import { onMount } from "svelte";
 
   let mapContainer: HTMLDivElement;
 
-  onMount(() => initMap(mapContainer));
+  onMount(() => {
+    const cleanup = initMap(mapContainer);
+    const initialIso3 = page.url.searchParams.get("country") ?? "";
+
+    const unsubscribe = mapStore.subscribe((map) => {
+      if (!map || !initialIso3) return;
+      if (map.loaded()) {
+        selectCountry(map, initialIso3);
+      } else {
+        map.once("load", () => selectCountry(map, initialIso3));
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      cleanup();
+    };
+  });
 </script>
 
-<div class="map-root">
-  <div bind:this={mapContainer} class="map"></div>
-  <Panel>
-    <h1>HDX Boundaries Explorer <span class="beta">beta</span></h1>
-    <p class="subtitle">For internal use only</p>
-    <CountrySelect />
-    <SourceSelect />
-    <AdminSelect />
-    <LabelsToggle />
-  </Panel>
+<div class="app-shell">
+  <CountrySidebar />
+  <div class="map-area">
+    <div bind:this={mapContainer} class="map"></div>
+    <StatsPanel iso3={$selectedIso3} />
+  </div>
 </div>
 
 <style>
@@ -66,36 +79,21 @@
     word-break: break-all;
   }
 
-  .map-root {
-    position: relative;
+  .app-shell {
+    display: flex;
     width: 100vw;
     height: 100vh;
+  }
+
+  .map-area {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
   }
 
   .map {
     width: 100%;
     height: 100%;
-  }
-
-  h1 .beta {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: #fff;
-    background: #e8621a;
-    border-radius: 3px;
-    padding: 2px 5px 0;
-    vertical-align: middle;
-    position: relative;
-    top: -2px;
-  }
-
-  .subtitle {
-    font-size: 11px;
-    color: #888;
-    margin: -8px 0 0 0;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
   }
 </style>
