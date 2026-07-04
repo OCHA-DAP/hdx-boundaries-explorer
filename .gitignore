@@ -35,3 +35,6 @@ vite.config.ts.timestamp-*
 *.gpkg
 *.gpkg-journal
 *.tmp
+
+.playwright-cli
+.claude

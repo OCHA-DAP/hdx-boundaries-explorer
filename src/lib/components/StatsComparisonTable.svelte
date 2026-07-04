@@ -23,22 +23,41 @@
 
   const LEVELS = [1, 2, 3, 4];
 
-  const UNITS = [
-    { divisor: 1_000_000, suffix: "M" },
-    { divisor: 1_000, suffix: "k" },
-    { divisor: 1, suffix: "" },
-  ];
+  // Internal and edge counts can differ by orders of magnitude for the same
+  // country (an archipelago's edge count dwarfs its internal count), so each
+  // value picks its own unit rather than sharing one across the table.
+  function formatCount(n: number | bigint): string {
+    const v = Number(n);
+    if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(v >= 10_000_000 ? 0 : 1)}M`;
+    if (v >= 1_000) return `${Math.round(v / 1_000)}k`;
+    return `${Math.round(v)}`;
+  }
 
-  // Pick the coarsest unit under which the smallest non-zero value in this
-  // country's stats still rounds to at least 1, so no cell ever shows "0".
-  let vertexUnit = $derived.by(() => {
-    const nonZero = stats.map((s) => Number(s.totalVertices)).filter((v) => v > 0);
-    const min = nonZero.length ? Math.min(...nonZero) : 0;
-    return UNITS.find((u) => u.divisor <= min) ?? UNITS[UNITS.length - 1];
-  });
+  // The table sits in a panel with overflow-y: auto, which clips a CSS-only
+  // above/below tooltip on whichever row happens to be closest to that edge
+  // (the top row when opening upward, the bottom row when opening downward).
+  // Positioning with `fixed` + coordinates computed on hover escapes that
+  // clipping (fixed elements aren't confined by an ancestor's overflow unless
+  // that ancestor has a transform, which none here do) and lets every row and
+  // column pick whichever side actually has room in the viewport.
+  const TOOLTIP_WIDTH = 220;
+  const TOOLTIP_EST_HEIGHT = 90;
+  const GAP = 4;
 
-  function formatVertices(n: number | bigint): string {
-    return Math.round(Number(n) / vertexUnit.divisor).toLocaleString();
+  let tooltipPos: { x: number; y: number; openBelow: boolean } | null = $state(null);
+
+  function showTooltip(e: MouseEvent) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const openBelow =
+      rect.bottom + GAP + TOOLTIP_EST_HEIGHT <= window.innerHeight ||
+      rect.top - GAP - TOOLTIP_EST_HEIGHT < 0;
+    const x = Math.min(Math.max(rect.left, GAP), window.innerWidth - TOOLTIP_WIDTH - GAP);
+    const y = openBelow ? rect.bottom + GAP : rect.top - GAP;
+    tooltipPos = { x, y, openBelow };
+  }
+
+  function hideTooltip() {
+    tooltipPos = null;
   }
 
   $effect(() => {
@@ -104,8 +123,14 @@
               {#if col.levels[level]}
                 <button class="cell-btn" onclick={() => onCellClick(col.id, level)}>
                   {col.levels[level]?.featureCount.toLocaleString()} units
-                  <span class="muted"
-                    >· {formatVertices(col.levels[level]?.totalVertices ?? 0)}{vertexUnit.suffix} pts</span
+                  <span
+                    class="muted vertex-hint"
+                    role="note"
+                    onmouseenter={showTooltip}
+                    onmouseleave={hideTooltip}
+                    >· {formatCount(col.levels[level]?.internalVertices ?? 0)} in / {formatCount(
+                      col.levels[level]?.edgeVertices ?? 0,
+                    )} out</span
                   >
                 </button>
               {:else}
@@ -117,6 +142,19 @@
       {/each}
     </tbody>
   </table>
+{/if}
+
+{#if tooltipPos}
+  <div
+    class="tooltip"
+    style:left="{tooltipPos.x}px"
+    style:top="{tooltipPos.y}px"
+    style:transform={tooltipPos.openBelow ? "none" : "translateY(-100%)"}
+  >
+    <strong>in</strong>: vertices on boundaries shared between units at this level (inner
+    precision). <strong>out</strong>: vertices on the country's outer boundary — coastline /
+    international border.
+  </div>
 {/if}
 
 <style>
@@ -147,6 +185,24 @@
 
   .muted {
     color: #999;
+  }
+
+  .vertex-hint {
+    cursor: default;
+  }
+
+  .tooltip {
+    position: fixed;
+    z-index: 100;
+    width: 220px;
+    white-space: normal;
+    background: #333;
+    color: #fff;
+    font-size: 11px;
+    font-family: sans-serif;
+    padding: 4px 8px;
+    border-radius: 4px;
+    pointer-events: none;
   }
 
   .source-btn,

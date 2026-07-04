@@ -9,6 +9,8 @@ export interface SourceStat {
   featureCount: number;
   totalVertices: number;
   avgVertices: number;
+  edgeVertices: number;
+  internalVertices: number;
 }
 
 let statsPromise: Promise<SourceStat[]> | null = null;
@@ -19,7 +21,16 @@ function loadStats(): Promise<SourceStat[]> {
       new Promise((resolve) => {
         parquetRead({
           file: asyncBuffer,
-          columns: ["source", "level", "iso3", "feature_count", "total_vertices", "avg_vertices"],
+          columns: [
+            "source",
+            "level",
+            "iso3",
+            "feature_count",
+            "total_vertices",
+            "avg_vertices",
+            "edge_vertices",
+            "internal_vertices",
+          ],
           compressors,
           rowFormat: "object",
           onComplete(rows) {
@@ -31,6 +42,8 @@ function loadStats(): Promise<SourceStat[]> {
                 feature_count: number;
                 total_vertices: number;
                 avg_vertices: number;
+                edge_vertices: number;
+                internal_vertices: number;
               }>
             ).map((r) => ({
               source: r.source,
@@ -39,6 +52,8 @@ function loadStats(): Promise<SourceStat[]> {
               featureCount: r.feature_count,
               totalVertices: r.total_vertices,
               avgVertices: r.avg_vertices,
+              edgeVertices: r.edge_vertices,
+              internalVertices: r.internal_vertices,
             }));
             resolve(stats);
           },
