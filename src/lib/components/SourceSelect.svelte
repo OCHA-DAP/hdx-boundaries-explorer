@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { applyAdminFilter } from '$lib/map/admin';
-  import { mapStore, selectedAdmin, selectedIso3, selectedSource } from '$lib/map/store';
-  import { ADMIN_SOURCES, getLevelsForSource } from '$lib/sources';
-  import { get } from 'svelte/store';
+  import { applyAdminFilter } from "$lib/map/admin";
+  import { mapStore, selectedAdmin, selectedIso3, selectedSource } from "$lib/map/store";
+  import { ADMIN_SOURCES, getLevelsForSource } from "$lib/sources";
+  import { get } from "svelte/store";
 
   function switchTo(sourceId: string) {
     selectedSource.set(sourceId);
@@ -24,12 +24,12 @@
   }
 
   function onKeydown(e: KeyboardEvent) {
-    if (e.target instanceof HTMLInputElement && e.target.type !== 'checkbox') return;
-    if (e.key !== '[' && e.key !== ']') return;
+    if (e.target instanceof HTMLInputElement && e.target.type !== "checkbox") return;
+    if (e.key !== "[" && e.key !== "]") return;
 
     const idx = ADMIN_SOURCES.findIndex((s) => s.id === get(selectedSource));
     const next =
-      e.key === ']'
+      e.key === "]"
         ? (idx + 1) % ADMIN_SOURCES.length
         : (idx - 1 + ADMIN_SOURCES.length) % ADMIN_SOURCES.length;
     switchTo(ADMIN_SOURCES[next].id);

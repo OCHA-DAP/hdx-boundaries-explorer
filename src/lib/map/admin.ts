@@ -1,7 +1,7 @@
-import { ADMIN_SOURCES } from '$lib/sources';
-import type maplibregl from 'maplibre-gl';
-import { get } from 'svelte/store';
-import { labelsEnabled, selectedAdmin, selectedIso3, selectedSource } from './store';
+import { ADMIN_SOURCES } from "$lib/sources";
+import type maplibregl from "maplibre-gl";
+import { get } from "svelte/store";
+import { labelsEnabled, selectedAdmin, selectedIso3, selectedSource } from "./store";
 
 let cancelPendingHide: (() => void) | null = null;
 
@@ -20,28 +20,28 @@ export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
   for (const src of ADMIN_SOURCES) {
     for (const l of src.levels) {
       if (src.id === activeSource && l === activeLevel) {
-        map.setLayoutProperty(`${src.id}-adm${l}-fill`, 'visibility', 'visible');
-        map.setLayoutProperty(`${src.id}-adm${l}-hover`, 'visibility', 'visible');
-        map.setLayoutProperty(`${src.id}-adm${l}-line`, 'visibility', 'visible');
+        map.setLayoutProperty(`${src.id}-adm${l}-fill`, "visibility", "visible");
+        map.setLayoutProperty(`${src.id}-adm${l}-hover`, "visibility", "visible");
+        map.setLayoutProperty(`${src.id}-adm${l}-line`, "visibility", "visible");
         map.setLayoutProperty(
           `${src.id}-adm${l}-label`,
-          'visibility',
-          showLabels ? 'visible' : 'none',
+          "visibility",
+          showLabels ? "visible" : "none",
         );
         map.setFilter(`${src.id}-adm${l}-fill`, [
-          '==',
-          ['slice', ['get', src.countryCodeField], 0, 3],
+          "==",
+          ["slice", ["get", src.countryCodeField], 0, 3],
           iso3,
         ]);
-        map.setFilter(`${src.id}-adm${l}-hover`, ['==', ['get', src.countryCodeField], '']);
+        map.setFilter(`${src.id}-adm${l}-hover`, ["==", ["get", src.countryCodeField], ""]);
         map.setFilter(`${src.id}-adm${l}-line`, [
-          '==',
-          ['slice', ['get', src.countryCodeField], 0, 3],
+          "==",
+          ["slice", ["get", src.countryCodeField], 0, 3],
           iso3,
         ]);
         map.setFilter(`${src.id}-adm${l}-label`, [
-          '==',
-          ['slice', ['get', src.countryCodeField], 0, 3],
+          "==",
+          ["slice", ["get", src.countryCodeField], 0, 3],
           iso3,
         ]);
       }
@@ -57,24 +57,24 @@ export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
     for (const src of ADMIN_SOURCES) {
       for (const l of src.levels) {
         if (src.id !== activeSource || l !== activeLevel) {
-          map.setLayoutProperty(`${src.id}-adm${l}-fill`, 'visibility', 'none');
-          map.setLayoutProperty(`${src.id}-adm${l}-hover`, 'visibility', 'none');
-          map.setLayoutProperty(`${src.id}-adm${l}-line`, 'visibility', 'none');
-          map.setLayoutProperty(`${src.id}-adm${l}-label`, 'visibility', 'none');
-          map.setFilter(`${src.id}-adm${l}-fill`, ['==', ['get', src.countryCodeField], '']);
-          map.setFilter(`${src.id}-adm${l}-hover`, ['==', ['get', src.countryCodeField], '']);
-          map.setFilter(`${src.id}-adm${l}-line`, ['==', ['get', src.countryCodeField], '']);
-          map.setFilter(`${src.id}-adm${l}-label`, ['==', ['get', src.countryCodeField], '']);
+          map.setLayoutProperty(`${src.id}-adm${l}-fill`, "visibility", "none");
+          map.setLayoutProperty(`${src.id}-adm${l}-hover`, "visibility", "none");
+          map.setLayoutProperty(`${src.id}-adm${l}-line`, "visibility", "none");
+          map.setLayoutProperty(`${src.id}-adm${l}-label`, "visibility", "none");
+          map.setFilter(`${src.id}-adm${l}-fill`, ["==", ["get", src.countryCodeField], ""]);
+          map.setFilter(`${src.id}-adm${l}-hover`, ["==", ["get", src.countryCodeField], ""]);
+          map.setFilter(`${src.id}-adm${l}-line`, ["==", ["get", src.countryCodeField], ""]);
+          map.setFilter(`${src.id}-adm${l}-label`, ["==", ["get", src.countryCodeField], ""]);
         }
       }
     }
 
-    map.off('render', onRender);
+    map.off("render", onRender);
     cancelPendingHide = null;
   };
 
-  map.on('render', onRender);
-  cancelPendingHide = () => map.off('render', onRender);
+  map.on("render", onRender);
+  cancelPendingHide = () => map.off("render", onRender);
 }
 
 export function initLabelsToggle(map: maplibregl.Map): void {
@@ -85,8 +85,8 @@ export function initLabelsToggle(map: maplibregl.Map): void {
     const activeLevel = get(selectedAdmin);
     map.setLayoutProperty(
       `${activeSource}-adm${activeLevel}-label`,
-      'visibility',
-      enabled ? 'visible' : 'none',
+      "visibility",
+      enabled ? "visible" : "none",
     );
   });
 }

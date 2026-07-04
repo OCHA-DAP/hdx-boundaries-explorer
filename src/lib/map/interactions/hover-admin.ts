@@ -1,15 +1,15 @@
-import { labelsEnabled, selectedAdmin, selectedSource } from '$lib/map/store';
-import { ADMIN_SOURCES } from '$lib/sources';
-import maplibregl from 'maplibre-gl';
-import { get } from 'svelte/store';
+import { labelsEnabled, selectedAdmin, selectedSource } from "$lib/map/store";
+import { ADMIN_SOURCES } from "$lib/sources";
+import maplibregl from "maplibre-gl";
+import { get } from "svelte/store";
 
 function buildPopupHtml(
   props: Record<string, unknown>,
   src: (typeof ADMIN_SOURCES)[number],
   level: number,
 ): string | null {
-  const nameField = src.nameField.replace('{level}', String(level));
-  const codeField = src.codeField.replace('{level}', String(level));
+  const nameField = src.nameField.replace("{level}", String(level));
+  const codeField = src.codeField.replace("{level}", String(level));
   const name = props[nameField];
   if (!name) return null;
   const code = props[codeField];
@@ -19,12 +19,12 @@ function buildPopupHtml(
     : String(name);
 
   const rows = Object.entries(props)
-    .filter(([k, v]) => (v != null && typeof v === 'string' ? v.trim() !== '' : v !== ''))
+    .filter(([, v]) => (v != null && typeof v === "string" ? v.trim() !== "" : v !== ""))
     .map(
       ([k, v]) =>
         `<tr><td class="feature-tooltip-key">${k}</td><td class="feature-tooltip-val">${String(v)}</td></tr>`,
     )
-    .join('');
+    .join("");
 
   if (rows) {
     html += `<table class="feature-tooltip-props">${rows}</table>`;
@@ -37,8 +37,8 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
   const popup = new maplibregl.Popup({
     closeButton: false,
     closeOnClick: false,
-    className: 'feature-tooltip',
-    maxWidth: '260px',
+    className: "feature-tooltip",
+    maxWidth: "260px",
   });
 
   let lastPoint: maplibregl.Point | null = null;
@@ -65,7 +65,7 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
     const sourceId = `${newSource}-adm${level}`;
     const point = lastPoint;
     const lngLat = lastLngLat;
-    const codeField = srcDef.codeField.replace('{level}', String(level));
+    const codeField = srcDef.codeField.replace("{level}", String(level));
     const labels = get(labelsEnabled);
 
     const tryUpdate = () => {
@@ -76,8 +76,8 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
       const codeValue = features[0].properties?.[codeField];
       if (codeValue != null) {
         map.setFilter(`${newSource}-adm${level}-hover`, [
-          '==',
-          ['get', codeField],
+          "==",
+          ["get", codeField],
           String(codeValue),
         ]);
       }
@@ -97,40 +97,40 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
     // runs first and doesn't overwrite our hover filter.
     const onRender = () => {
       if (!map.isSourceLoaded(sourceId)) return;
-      map.off('render', onRender);
+      map.off("render", onRender);
       tryUpdate();
     };
-    map.on('render', onRender);
+    map.on("render", onRender);
   });
 
   for (const src of ADMIN_SOURCES) {
     for (const level of src.levels) {
       const layerId = `${src.id}-adm${level}-fill`;
 
-      map.on('mousemove', layerId, (e) => {
+      map.on("mousemove", layerId, (e) => {
         if (!e.features?.length) return;
         lastPoint = e.point;
         lastLngLat = e.lngLat;
-        const codeField = src.codeField.replace('{level}', String(level));
+        const codeField = src.codeField.replace("{level}", String(level));
         const codeValue = e.features[0].properties?.[codeField];
         if (codeValue != null) {
           map.setFilter(`${src.id}-adm${level}-hover`, [
-            '==',
-            ['get', codeField],
+            "==",
+            ["get", codeField],
             String(codeValue),
           ]);
         }
         if (get(labelsEnabled)) return;
         const html = buildPopupHtml(e.features[0].properties ?? {}, src, level);
         if (!html) return;
-        map.getCanvas().style.cursor = 'pointer';
+        map.getCanvas().style.cursor = "pointer";
         popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
       });
 
-      map.on('mouseleave', layerId, () => {
-        map.getCanvas().style.cursor = '';
+      map.on("mouseleave", layerId, () => {
+        map.getCanvas().style.cursor = "";
         popup.remove();
-        map.setFilter(`${src.id}-adm${level}-hover`, ['==', ['get', src.countryCodeField], '']);
+        map.setFilter(`${src.id}-adm${level}-hover`, ["==", ["get", src.countryCodeField], ""]);
         lastPoint = null;
         lastLngLat = null;
       });

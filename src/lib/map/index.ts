@@ -1,17 +1,17 @@
-import maplibregl from 'maplibre-gl';
-import { Protocol } from 'pmtiles';
-import { initLabelsToggle } from './admin';
+import maplibregl from "maplibre-gl";
+import { Protocol } from "pmtiles";
+import { initLabelsToggle } from "./admin";
 import {
   addAdminHoverInteraction,
   addClickInteraction,
   addHoverInteraction,
-} from './interactions/index';
-import { mapStore } from './store';
-import MAP_STYLE from './style';
+} from "./interactions/index";
+import { mapStore } from "./store";
+import MAP_STYLE from "./style";
 
 export function initMap(container: HTMLDivElement): () => void {
   const protocol = new Protocol();
-  maplibregl.addProtocol('pmtiles', protocol.tile);
+  maplibregl.addProtocol("pmtiles", protocol.tile);
 
   const map = new maplibregl.Map({
     container,
@@ -20,8 +20,8 @@ export function initMap(container: HTMLDivElement): () => void {
     zoom: 3,
   });
 
-  map.on('style.load', () => {
-    map.setProjection({ type: 'globe' });
+  map.on("style.load", () => {
+    map.setProjection({ type: "globe" });
   });
 
   mapStore.set(map);
@@ -33,6 +33,6 @@ export function initMap(container: HTMLDivElement): () => void {
   return () => {
     mapStore.set(null);
     map.remove();
-    maplibregl.removeProtocol('pmtiles');
+    maplibregl.removeProtocol("pmtiles");
   };
 }

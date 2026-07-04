@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { labelsEnabled } from '$lib/map/store';
+  import { labelsEnabled } from "$lib/map/store";
 </script>
 
 <div class="field">
@@ -7,7 +7,7 @@
   <label class="toggle">
     <input type="checkbox" bind:checked={$labelsEnabled} />
     <span class="track"><span class="thumb"></span></span>
-    <span class="text">{$labelsEnabled ? 'Labels' : 'Hover'}</span>
+    <span class="text">{$labelsEnabled ? "Labels" : "Hover"}</span>
   </label>
 </div>
 

@@ -1,11 +1,11 @@
-import { getBboxForIso3 } from '$lib/parquet/bbox';
-import { applyAdminFilter } from '$lib/map/admin';
-import { selectedIso3 } from '$lib/map/store';
-import { get } from 'svelte/store';
-import type maplibregl from 'maplibre-gl';
+import { applyAdminFilter } from "$lib/map/admin";
+import { selectedIso3 } from "$lib/map/store";
+import { getBboxForIso3 } from "$lib/parquet/bbox";
+import type maplibregl from "maplibre-gl";
+import { get } from "svelte/store";
 
 export function addClickInteraction(map: maplibregl.Map): void {
-  map.on('click', 'countries-hover', async (e) => {
+  map.on("click", "countries-hover", async (e) => {
     if (!e.features?.length) return;
 
     const iso3: string | undefined = e.features[0].properties?.iso3cd;

@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { applyAdminFilter } from '$lib/map/admin';
-  import { ADMIN_LEVELS } from '$lib/map/layers/admin';
-  import { getAdminCount } from '$lib/parquet/adminCount';
-  import { mapStore, selectedAdmin, selectedIso3, selectedSource } from '$lib/map/store';
-  import { getLevelsForSource } from '$lib/sources';
-  import { get } from 'svelte/store';
+  import { applyAdminFilter } from "$lib/map/admin";
+  import { ADMIN_LEVELS } from "$lib/map/layers/admin";
+  import { getAdminCount } from "$lib/parquet/adminCount";
+  import { mapStore, selectedAdmin, selectedIso3, selectedSource } from "$lib/map/store";
+  import { getLevelsForSource } from "$lib/sources";
+  import { get } from "svelte/store";
 
   let counts: Record<number, number | null> = $state(
     Object.fromEntries(ADMIN_LEVELS.map((l) => [l, null])),
@@ -68,7 +68,7 @@
   <select id="admin-select" value={$selectedAdmin} onchange={onSelect}>
     {#each ADMIN_LEVELS.filter((l) => counts[l] !== 0) as level (level)}
       <option value={level}>
-        Admin {level}{counts[level] !== null ? ` (${counts[level]})` : ''}
+        Admin {level}{counts[level] !== null ? ` (${counts[level]})` : ""}
       </option>
     {/each}
   </select>

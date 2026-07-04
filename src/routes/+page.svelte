@@ -1,12 +1,12 @@
 <script lang="ts">
-  import AdminSelect from '$lib/components/AdminSelect.svelte';
-  import CountrySelect from '$lib/components/CountrySelect.svelte';
-  import LabelsToggle from '$lib/components/LabelsToggle.svelte';
-  import Panel from '$lib/components/Panel.svelte';
-  import SourceSelect from '$lib/components/SourceSelect.svelte';
-  import { initMap } from '$lib/map';
-  import 'maplibre-gl/dist/maplibre-gl.css';
-  import { onMount } from 'svelte';
+  import AdminSelect from "$lib/components/AdminSelect.svelte";
+  import CountrySelect from "$lib/components/CountrySelect.svelte";
+  import LabelsToggle from "$lib/components/LabelsToggle.svelte";
+  import Panel from "$lib/components/Panel.svelte";
+  import SourceSelect from "$lib/components/SourceSelect.svelte";
+  import { initMap } from "$lib/map";
+  import "maplibre-gl/dist/maplibre-gl.css";
+  import { onMount } from "svelte";
 
   let mapContainer: HTMLDivElement;
 

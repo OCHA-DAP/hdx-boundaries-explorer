@@ -1,6 +1,6 @@
-import { asyncBufferFromUrl, parquetRead } from 'hyparquet';
-import { compressors } from 'hyparquet-compressors';
-import { parquetUrl } from './url';
+import { asyncBufferFromUrl, parquetRead } from "hyparquet";
+import { compressors } from "hyparquet-compressors";
+import { parquetUrl } from "./url";
 
 export type Bbox = [number, number, number, number];
 
@@ -14,9 +14,9 @@ async function loadBboxMap(file: string): Promise<Map<string, Bbox>> {
   await new Promise<void>((resolve) => {
     parquetRead({
       file: asyncBuffer,
-      columns: ['iso3cd', 'geometry_bbox'],
+      columns: ["iso3cd", "geometry_bbox"],
       compressors,
-      rowFormat: 'object',
+      rowFormat: "object",
       onComplete(rows) {
         for (const row of rows as Array<{
           iso3cd: string;
@@ -37,7 +37,7 @@ async function loadBboxMap(file: string): Promise<Map<string, Bbox>> {
 
 const mapPromises = new Map<string, Promise<Map<string, Bbox>>>();
 
-export async function getBboxForIso3(iso3: string, file = 'salb_adm0'): Promise<Bbox | null> {
+export async function getBboxForIso3(iso3: string, file = "salb_adm0"): Promise<Bbox | null> {
   if (!mapPromises.has(file)) {
     mapPromises.set(file, loadBboxMap(file));
   }

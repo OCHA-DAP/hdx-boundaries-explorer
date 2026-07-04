@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { applyAdminFilter } from '$lib/map/admin';
-  import { mapStore, selectedIso3 } from '$lib/map/store';
-  import { getBboxForIso3 } from '$lib/parquet/bbox';
-  import { getCountries, type Country } from '$lib/parquet/countries';
-  import { onMount } from 'svelte';
-  import { get } from 'svelte/store';
+  import { applyAdminFilter } from "$lib/map/admin";
+  import { mapStore, selectedIso3 } from "$lib/map/store";
+  import { getBboxForIso3 } from "$lib/parquet/bbox";
+  import { getCountries, type Country } from "$lib/parquet/countries";
+  import { onMount } from "svelte";
+  import { get } from "svelte/store";
 
   let countries: Country[] = $state([]);
 
