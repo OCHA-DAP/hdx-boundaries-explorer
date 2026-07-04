@@ -10,7 +10,6 @@
   import { onMount } from "svelte";
   import { get } from "svelte/store";
   import DecisionPanel from "./DecisionPanel.svelte";
-  import LabelsToggle from "./LabelsToggle.svelte";
   import RelevanceBadge from "./RelevanceBadge.svelte";
 
   interface Row {
@@ -76,8 +75,6 @@
     goto(resolve(`/?country=${iso3}`), { replaceState: true, noScroll: true, keepFocus: true });
   }
 
-  let selectedName = $derived(rows.find((r) => r.iso3 === $selectedIso3)?.name ?? null);
-
   function onKeydown(e: KeyboardEvent) {
     if (e.target instanceof HTMLInputElement && e.target.type !== "checkbox") return;
     if (e.key !== "[" && e.key !== "]") return;
@@ -102,14 +99,6 @@
 
   <div class="controls">
     {#if $selectedIso3}
-      <p class="current-country">
-        {selectedName ? `${selectedName} (${$selectedIso3})` : $selectedIso3}
-      </p>
-      <p class="hint">
-        [ ] to cycle sources
-        <span class="tooltip">Use [ and ] to cycle through boundary sources</span>
-      </p>
-      <LabelsToggle />
       <DecisionPanel iso3={$selectedIso3} />
     {:else}
       <p class="muted">Select a country below to see source options and decisions.</p>
@@ -226,45 +215,10 @@
     border-bottom: 1px solid #eee;
   }
 
-  .current-country {
-    margin: 0;
-    font-size: 13px;
-    font-weight: 600;
-    color: #1a1a1a;
-  }
-
   .muted {
     margin: 0;
     font-size: 12px;
     color: #999;
-  }
-
-  .hint {
-    position: relative;
-    margin: 0;
-    font-size: 10px;
-    color: #aaa;
-    font-family: monospace;
-    cursor: default;
-  }
-
-  .tooltip {
-    display: none;
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    background: #333;
-    color: #fff;
-    font-size: 11px;
-    font-family: sans-serif;
-    white-space: nowrap;
-    padding: 4px 8px;
-    border-radius: 4px;
-    pointer-events: none;
-  }
-
-  .hint:hover .tooltip {
-    display: block;
   }
 
   .toolbar {

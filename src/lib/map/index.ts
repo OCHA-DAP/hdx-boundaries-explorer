@@ -1,12 +1,13 @@
 import maplibregl from "maplibre-gl";
 import { Protocol } from "pmtiles";
-import { initLabelsToggle } from "./admin";
+import { get } from "svelte/store";
+import { fitCountryBounds, initLabelsToggle } from "./admin";
 import {
   addAdminHoverInteraction,
   addClickInteraction,
   addHoverInteraction,
 } from "./interactions/index";
-import { mapStore } from "./store";
+import { mapStore, selectedIso3 } from "./store";
 import MAP_STYLE from "./style";
 
 export function initMap(container: HTMLDivElement): () => void {
@@ -22,6 +23,11 @@ export function initMap(container: HTMLDivElement): () => void {
 
   map.on("style.load", () => {
     map.setProjection({ type: "globe" });
+  });
+
+  map.on("resize", () => {
+    const iso3 = get(selectedIso3);
+    if (iso3) fitCountryBounds(map, iso3);
   });
 
   mapStore.set(map);

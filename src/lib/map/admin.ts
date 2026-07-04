@@ -21,24 +21,12 @@ async function pickLevel(iso3: string, source: string, level: number): Promise<n
   return [...levels].reverse().find(hasData) ?? levels[levels.length - 1];
 }
 
-// Sets the selected country, fits the map to its bbox, and applies the current
-// source/level filter (resolving to a level with data for this country).
-// Shared by CountrySidebar's row clicks and the page's initial ?country=
-// query-param handling so both go through the same sequence.
-export async function selectCountry(map: maplibregl.Map | null, iso3: string): Promise<void> {
-  selectedIso3.set(iso3);
-  if (!iso3) return;
-
-  const [bbox, level] = await Promise.all([
-    getBboxForIso3(iso3),
-    pickLevel(iso3, get(selectedSource), get(selectedAdmin)),
-  ]);
-  selectedAdmin.set(level);
-
+// Fits the map to a country's bbox. Split out from selectCountry so it can also
+// be re-run on map resize, when the previously fit zoom/pan no longer matches
+// the container's new dimensions.
+export async function fitCountryBounds(map: maplibregl.Map, iso3: string): Promise<void> {
+  const bbox = await getBboxForIso3(iso3);
   if (!bbox) return;
-  if (!map) return;
-
-  applyAdminFilter(map, iso3);
 
   map.fitBounds(
     [
@@ -47,6 +35,24 @@ export async function selectCountry(map: maplibregl.Map | null, iso3: string): P
     ],
     { padding: 50 },
   );
+}
+
+// Sets the selected country, fits the map to its bbox, and applies the current
+// source/level filter (resolving to a level with data for this country).
+// Shared by CountrySidebar's row clicks and the page's initial ?country=
+// query-param handling so both go through the same sequence.
+export async function selectCountry(map: maplibregl.Map | null, iso3: string): Promise<void> {
+  selectedIso3.set(iso3);
+  if (!iso3) return;
+
+  const [, level] = await Promise.all([
+    map ? fitCountryBounds(map, iso3) : Promise.resolve(),
+    pickLevel(iso3, get(selectedSource), get(selectedAdmin)),
+  ]);
+  selectedAdmin.set(level);
+
+  if (!map) return;
+  applyAdminFilter(map, iso3);
 }
 
 // Switches to a source, keeping the current admin level if it has data for
