@@ -86,14 +86,16 @@
   }
 
   .map-area {
-    position: relative;
+    display: flex;
+    flex-direction: column;
     flex: 1;
     min-width: 0;
     height: 100%;
   }
 
   .map {
+    flex: 1;
+    min-height: 0;
     width: 100%;
-    height: 100%;
   }
 </style>

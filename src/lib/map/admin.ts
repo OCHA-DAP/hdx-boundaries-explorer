@@ -1,17 +1,40 @@
 import { getBboxForIso3 } from "$lib/parquet/bbox";
-import { ADMIN_SOURCES } from "$lib/sources";
+import { getStatsForCountry } from "$lib/parquet/sourceStats";
+import { ADMIN_SOURCES, getLevelsForSource } from "$lib/sources";
 import type maplibregl from "maplibre-gl";
 import { get } from "svelte/store";
 import { labelsEnabled, selectedAdmin, selectedIso3, selectedSource } from "./store";
 
+// Resolves which level to show for a source/country: keeps `level` if that
+// source actually has data at that level for this country, otherwise falls
+// back to the deepest level that does (or the source's deepest configured
+// level if it has no data at all).
+async function pickLevel(iso3: string, source: string, level: number): Promise<number> {
+  const levels = getLevelsForSource(source);
+  if (levels.length === 0) return level;
+
+  const stats = await getStatsForCountry(iso3);
+  const hasData = (l: number) =>
+    stats.some((s) => s.source === source && s.level === l && s.featureCount > 0);
+
+  if (levels.includes(level as (typeof levels)[number]) && hasData(level)) return level;
+  return [...levels].reverse().find(hasData) ?? levels[levels.length - 1];
+}
+
 // Sets the selected country, fits the map to its bbox, and applies the current
-// source/level filter. Shared by CountrySidebar's row clicks and the page's
-// initial ?country= query-param handling so both go through the same sequence.
+// source/level filter (resolving to a level with data for this country).
+// Shared by CountrySidebar's row clicks and the page's initial ?country=
+// query-param handling so both go through the same sequence.
 export async function selectCountry(map: maplibregl.Map | null, iso3: string): Promise<void> {
   selectedIso3.set(iso3);
   if (!iso3) return;
 
-  const bbox = await getBboxForIso3(iso3);
+  const [bbox, level] = await Promise.all([
+    getBboxForIso3(iso3),
+    pickLevel(iso3, get(selectedSource), get(selectedAdmin)),
+  ]);
+  selectedAdmin.set(level);
+
   if (!bbox) return;
   if (!map) return;
 
@@ -24,6 +47,40 @@ export async function selectCountry(map: maplibregl.Map | null, iso3: string): P
     ],
     { padding: 50 },
   );
+}
+
+// Switches to a source, keeping the current admin level if it has data for
+// this country, otherwise falling back to the deepest level that does. Used
+// by CountrySidebar's [ ]-keyboard cycling and StatsComparisonTable's row
+// clicks.
+export async function selectSource(
+  map: maplibregl.Map | null,
+  iso3: string,
+  source: string,
+): Promise<void> {
+  selectedSource.set(source);
+
+  if (iso3) {
+    selectedAdmin.set(await pickLevel(iso3, source, get(selectedAdmin)));
+  }
+
+  if (!map || !iso3) return;
+  applyAdminFilter(map, iso3);
+}
+
+// Switches to an exact source/level pair. Used by StatsComparisonTable's cell
+// clicks, where the level is already known to be valid for the source.
+export function selectSourceLevel(
+  map: maplibregl.Map | null,
+  iso3: string,
+  source: string,
+  level: number,
+): void {
+  selectedSource.set(source);
+  selectedAdmin.set(level);
+
+  if (!map || !iso3) return;
+  applyAdminFilter(map, iso3);
 }
 
 let cancelPendingHide: (() => void) | null = null;

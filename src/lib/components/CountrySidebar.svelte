@@ -1,19 +1,17 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { selectCountry } from "$lib/map/admin";
-  import { mapStore, selectedIso3 } from "$lib/map/store";
+  import { selectCountry, selectSource } from "$lib/map/admin";
+  import { mapStore, selectedIso3, selectedSource } from "$lib/map/store";
   import { getCountries, type Country } from "$lib/parquet/countries";
   import { getAllPlanStatus, type PlanStatus } from "$lib/parquet/planStatus";
   import { DECISION_STATUS_LABELS, getDecisions, type Decision } from "$lib/sheet/decisions";
   import { ADMIN_SOURCES } from "$lib/sources";
   import { onMount } from "svelte";
   import { get } from "svelte/store";
-  import AdminSelect from "./AdminSelect.svelte";
   import DecisionPanel from "./DecisionPanel.svelte";
   import LabelsToggle from "./LabelsToggle.svelte";
   import RelevanceBadge from "./RelevanceBadge.svelte";
-  import SourceSelect from "./SourceSelect.svelte";
 
   interface Row {
     iso3: string;
@@ -66,6 +64,9 @@
       const rankA = a.plan?.rank ?? 5;
       const rankB = b.plan?.rank ?? 5;
       if (rankA !== rankB) return rankA - rankB;
+      const yearA = Number(a.plan?.planYear ?? -Infinity);
+      const yearB = Number(b.plan?.planYear ?? -Infinity);
+      if (yearA !== yearB) return yearB - yearA;
       return a.name.localeCompare(b.name);
     }),
   );
@@ -76,7 +77,21 @@
   }
 
   let selectedName = $derived(rows.find((r) => r.iso3 === $selectedIso3)?.name ?? null);
+
+  function onKeydown(e: KeyboardEvent) {
+    if (e.target instanceof HTMLInputElement && e.target.type !== "checkbox") return;
+    if (e.key !== "[" && e.key !== "]") return;
+
+    const idx = ADMIN_SOURCES.findIndex((s) => s.id === get(selectedSource));
+    const next =
+      e.key === "]"
+        ? (idx + 1) % ADMIN_SOURCES.length
+        : (idx - 1 + ADMIN_SOURCES.length) % ADMIN_SOURCES.length;
+    selectSource(get(mapStore), get(selectedIso3), ADMIN_SOURCES[next].id);
+  }
 </script>
+
+<svelte:window onkeydown={onKeydown} />
 
 <aside class="sidebar">
   <div class="sidebar-header">
@@ -90,8 +105,10 @@
       <p class="current-country">
         {selectedName ? `${selectedName} (${$selectedIso3})` : $selectedIso3}
       </p>
-      <SourceSelect />
-      <AdminSelect />
+      <p class="hint">
+        [ ] to cycle sources
+        <span class="tooltip">Use [ and ] to cycle through boundary sources</span>
+      </p>
       <LabelsToggle />
       <DecisionPanel iso3={$selectedIso3} />
     {:else}
@@ -123,25 +140,21 @@
             class:selected={row.iso3 === $selectedIso3}
             onclick={() => selectRow(row.iso3)}
           >
-            <div class="row-main">
-              <span class="name">{row.name}</span>
-              <span class="iso3">{row.iso3}</span>
-            </div>
-            <div class="row-meta">
-              <RelevanceBadge
-                rank={row.plan?.rank ?? 5}
-                planType={row.plan?.planType ?? null}
-                planYear={row.plan?.planYear ?? null}
-              />
-              {#if row.decision && row.decision.status !== "no_opinion"}
-                <span class="decision-tag">
-                  {DECISION_STATUS_LABELS[row.decision.status]}
-                  {#if row.decision.selectedSource}
-                    · {sourceLabel(row.decision.selectedSource)}
-                  {/if}
-                </span>
-              {/if}
-            </div>
+            <span class="name">{row.name}</span>
+            <span class="iso3">{row.iso3}</span>
+            <RelevanceBadge
+              rank={row.plan?.rank ?? 5}
+              planType={row.plan?.planType ?? null}
+              planYear={row.plan?.planYear ?? null}
+            />
+            {#if row.decision && row.decision.status !== "no_opinion"}
+              <span class="decision-tag">
+                {DECISION_STATUS_LABELS[row.decision.status]}
+                {#if row.decision.selectedSource}
+                  · {sourceLabel(row.decision.selectedSource)}
+                {/if}
+              </span>
+            {/if}
           </button>
         </li>
       {/each}
@@ -226,6 +239,34 @@
     color: #999;
   }
 
+  .hint {
+    position: relative;
+    margin: 0;
+    font-size: 10px;
+    color: #aaa;
+    font-family: monospace;
+    cursor: default;
+  }
+
+  .tooltip {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    background: #333;
+    color: #fff;
+    font-size: 11px;
+    font-family: sans-serif;
+    white-space: nowrap;
+    padding: 4px 8px;
+    border-radius: 4px;
+    pointer-events: none;
+  }
+
+  .hint:hover .tooltip {
+    display: block;
+  }
+
   .toolbar {
     display: flex;
     flex-direction: column;
@@ -282,11 +323,11 @@
     background: none;
     border: none;
     border-bottom: 1px solid #f2f2f2;
-    padding: 8px 16px;
+    padding: 6px 16px;
     cursor: pointer;
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    gap: 8px;
     font-family: inherit;
   }
 
@@ -298,19 +339,14 @@
     background: #eaf2fb;
   }
 
-  .row-main {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
   .name {
     font-size: 13px;
     font-weight: 500;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex: 1;
+    min-width: 0;
   }
 
   .iso3 {
@@ -319,15 +355,13 @@
     flex-shrink: 0;
   }
 
-  .row-meta {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-
   .decision-tag {
     font-size: 10px;
     color: #555;
+    flex-shrink: 0;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 </style>

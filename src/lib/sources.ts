@@ -34,14 +34,6 @@ export const ADMIN_SOURCES = [
     countryCodeField: "iso3",
   },
   {
-    id: "salb",
-    label: "UNGIS",
-    levels: [1, 2] as AdminLevel[],
-    nameField: "adm{level}nm",
-    codeField: "adm{level}cd",
-    countryCodeField: "iso3cd",
-  },
-  {
     id: "fao",
     label: "FAO",
     levels: [1, 2] as AdminLevel[],
@@ -56,6 +48,14 @@ export const ADMIN_SOURCES = [
     nameField: "NAM_{level}",
     codeField: "ADM{level}CD_c",
     countryCodeField: "ISO_A3",
+  },
+  {
+    id: "salb",
+    label: "UNGIS",
+    levels: [1, 2] as AdminLevel[],
+    nameField: "adm{level}nm",
+    codeField: "adm{level}cd",
+    countryCodeField: "iso3cd",
   },
 ];
 

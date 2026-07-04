@@ -19,16 +19,12 @@
 
 <style>
   .stats-panel {
-    position: absolute;
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-    z-index: 10;
+    flex-shrink: 0;
     max-height: 40vh;
     overflow-y: auto;
     background: white;
-    border-radius: 6px;
-    box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.2);
+    border-top: 1px solid #ddd;
+    box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.08);
     padding: 16px;
     font-family: sans-serif;
     font-size: 13px;
