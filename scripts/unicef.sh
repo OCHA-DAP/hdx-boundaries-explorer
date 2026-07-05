@@ -21,6 +21,17 @@ for level in 1 2 3 4; do
       --lco USE_PARQUET_GEO_TYPES=YES \
       --overwrite
 
+  # Add hover_id (iso3 + Source_ID) — see scripts/ocha.sh for why. adm0_ucode
+  # isn't a plain iso3 (it carries a country-type suffix), hence the substr.
+  tmp_hoverid="tmp/${name}_hoverid.parquet"
+  duckdb -c "
+    COPY (
+      SELECT *, substr(adm0_ucode, 1, 3) || '_' || coalesce(Source_ID, '') AS hover_id
+      FROM '${parquet}'
+    ) TO '${tmp_hoverid}' (FORMAT PARQUET, COMPRESSION ZSTD, COMPRESSION_LEVEL 15);
+  "
+  mv "$tmp_hoverid" "$parquet"
+
   tmp_fgb="tmp/${name}.fgb"
   gdal vector set-geom-type "$parquet" "$tmp_fgb" --overwrite
   tippecanoe \

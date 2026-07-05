@@ -34,6 +34,19 @@ for level in 1 2 3 4; do
       --lco USE_PARQUET_GEO_TYPES=YES \
       --overwrite
 
+  # Add hover_id (iso3 + pcode) so the map's hover highlight can target one
+  # admin unit precisely via MapLibre promoteId/feature-state — some pcodes
+  # are blank/duplicated (or legitimately shared by a multi-polygon admin
+  # unit like an archipelago), so the raw pcode alone isn't a safe id.
+  tmp_hoverid="tmp/${name}_hoverid.parquet"
+  duckdb -c "
+    COPY (
+      SELECT *, iso3 || '_' || coalesce(adm${level}_pcode, '') AS hover_id
+      FROM '${parquet}'
+    ) TO '${tmp_hoverid}' (FORMAT PARQUET, COMPRESSION ZSTD, COMPRESSION_LEVEL 15);
+  "
+  mv "$tmp_hoverid" "$parquet"
+
   # Convert parquet → FGB → pmtiles
   tmp_fgb="tmp/${name}.fgb"
   gdal vector convert "$parquet" "$tmp_fgb" --overwrite

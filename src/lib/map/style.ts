@@ -13,7 +13,17 @@ const pmtiles = (file: string) => `pmtiles://${PMTILES_BASE}/${file}`;
 const admSources = Object.fromEntries(
   ADMIN_SOURCES.flatMap((src) =>
     src.levels.flatMap((l) => [
-      [`${src.id}-adm${l}`, { type: "vector" as const, url: pmtiles(`${src.id}_adm${l}.pmtiles`) }],
+      [
+        `${src.id}-adm${l}`,
+        {
+          type: "vector" as const,
+          url: pmtiles(`${src.id}_adm${l}.pmtiles`),
+          // hover_id (iso3 + admin code, computed at download time) groups
+          // multi-polygon admin units — e.g. archipelagos split across many
+          // rows sharing one code — under a single feature id for hover.
+          promoteId: { [`${src.id}_adm${l}`]: "hover_id" },
+        },
+      ],
       [
         `${src.id}-adm${l}-labels`,
         { type: "vector" as const, url: pmtiles(`${src.id}_adm${l}_labels.pmtiles`) },

@@ -25,6 +25,16 @@ for level in 1 2 3 4; do
       --overwrite
   rm "$tmp_dl"
 
+  # Add hover_id (iso3 + source_id) — see scripts/ocha.sh for why.
+  tmp_hoverid="tmp/${name}_hoverid.parquet"
+  duckdb -c "
+    COPY (
+      SELECT *, iso3 || '_' || coalesce(source_id, '') AS hover_id
+      FROM '${parquet}'
+    ) TO '${tmp_hoverid}' (FORMAT PARQUET, COMPRESSION ZSTD, COMPRESSION_LEVEL 15);
+  "
+  mv "$tmp_hoverid" "$parquet"
+
   # Convert parquet → temp fgb → pmtiles, then delete fgb
   tmp_fgb="tmp/${name}.fgb"
   gdal vector convert "$parquet" "$tmp_fgb" --overwrite

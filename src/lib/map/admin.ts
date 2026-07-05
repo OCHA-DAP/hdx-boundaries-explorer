@@ -119,7 +119,11 @@ export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
           ["slice", ["get", src.countryCodeField], 0, 3],
           iso3,
         ]);
-        map.setFilter(`${src.id}-adm${l}-hover`, ["==", ["get", src.countryCodeField], ""]);
+        map.setFilter(`${src.id}-adm${l}-hover`, [
+          "==",
+          ["slice", ["get", src.countryCodeField], 0, 3],
+          iso3,
+        ]);
         map.setFilter(`${src.id}-adm${l}-line`, [
           "==",
           ["slice", ["get", src.countryCodeField], 0, 3],

@@ -27,9 +27,17 @@ export function adminLayersForSource(
       type: "line",
       source,
       "source-layer": sourceLayer,
+      // Scoped to the selected country like -fill/-line; which feature within
+      // that is highlighted is driven by feature-state (see hover-admin.ts),
+      // keyed off the source's promoted hover_id so multi-polygon admin units
+      // (e.g. archipelagos sharing one code) highlight together.
       filter: ["==", ["get", countryCodeField], ""],
       layout: { visibility: "none" },
-      paint: { "line-color": "#2060a0", "line-width": 3 },
+      paint: {
+        "line-color": "#2060a0",
+        "line-width": 3,
+        "line-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 1, 0],
+      },
     },
     {
       id: `${sourceId}-adm${level}-line`,

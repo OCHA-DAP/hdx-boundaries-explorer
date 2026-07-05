@@ -20,7 +20,7 @@ mkdir -p static/parquet static/pmtiles tmp
 trap 'rm -rf tmp' EXIT
 
 download_layer() {
-  local name=$1 layer=$2 make_labels=${3:-true}
+  local name=$1 layer=$2 make_labels=${3:-true} hover_level=${4:-}
   local query_url="${BASE_URL}/${layer}/query?where=1%3D1&orderByFields=objectid&outFields=*&f=json&token=${TOKEN}"
   local parquet="static/parquet/${name}.parquet"
   local tmp_fgb="tmp/${name}.fgb"
@@ -36,6 +36,20 @@ download_layer() {
       --lco COMPRESSION_LEVEL=15 \
       --lco USE_PARQUET_GEO_TYPES=YES \
       --overwrite
+
+  # Add hover_id (iso3 + admin code) for admin-level layers only (salb_adm0
+  # already has a real unique id promoted from objectid; salb_lines isn't
+  # hover-interactive) — see scripts/ocha.sh for why.
+  if [[ -n "$hover_level" ]]; then
+    local tmp_hoverid="tmp/${name}_hoverid.parquet"
+    duckdb -c "
+      COPY (
+        SELECT *, iso3cd || '_' || coalesce(adm${hover_level}cd, '') AS hover_id
+        FROM '${parquet}'
+      ) TO '${tmp_hoverid}' (FORMAT PARQUET, COMPRESSION ZSTD, COMPRESSION_LEVEL 15);
+    "
+    mv "$tmp_hoverid" "$parquet"
+  fi
 
   gdal vector set-geom-type "$parquet" "$tmp_fgb" --multi --overwrite --skip-errors
   tippecanoe \
@@ -79,7 +93,11 @@ for level in 0 1 2; do
   elif [[ $level -eq 1 ]]; then layer=4
   else layer=3
   fi
-  download_layer "salb_adm${level}" "$layer"
+  if [[ $level -eq 0 ]]; then
+    download_layer "salb_adm${level}" "$layer"
+  else
+    download_layer "salb_adm${level}" "$layer" true "$level"
+  fi
 done
 
 # Admin lines = layer 2 (no labels for line geometry)

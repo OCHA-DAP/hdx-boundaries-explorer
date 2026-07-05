@@ -1,4 +1,4 @@
-import { labelsEnabled, selectedAdmin, selectedIso3, selectedSource } from "$lib/map/store";
+import { labelsEnabled, selectedAdmin, selectedSource } from "$lib/map/store";
 import { ADMIN_SOURCES } from "$lib/sources";
 import maplibregl from "maplibre-gl";
 import { get } from "svelte/store";
@@ -33,24 +33,6 @@ function buildPopupHtml(
   return html;
 }
 
-// A hover filter must match both the hovered feature's code and the currently
-// selected country, otherwise a blank/duplicate code value (common on lower
-// admin levels with incomplete pcodes) matches every same-code feature across
-// the whole source, highlighting the entire country (or beyond) instead of
-// just the hovered polygon.
-function buildHoverFilter(
-  src: (typeof ADMIN_SOURCES)[number],
-  codeField: string,
-  codeValue: unknown,
-  iso3: string,
-): maplibregl.FilterSpecification {
-  return [
-    "all",
-    ["==", ["slice", ["get", src.countryCodeField], 0, 3], iso3],
-    ["==", ["get", codeField], String(codeValue)],
-  ];
-}
-
 export function addAdminHoverInteraction(map: maplibregl.Map): void {
   const popup = new maplibregl.Popup({
     closeButton: false,
@@ -59,11 +41,42 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
     maxWidth: "260px",
   });
 
+  // Hover highlighting is driven by feature-state keyed off each admin
+  // source's promoted hover_id (iso3 + admin code, computed at download
+  // time — see scripts/*.sh), so multi-polygon admin units that share one
+  // code (e.g. archipelagos split across many rows) highlight as a group,
+  // and the id is inherently country-scoped so it can never bleed across
+  // countries or collide on a blank/placeholder code.
+  let hoveredId: string | number | null = null;
+  let hoveredSourceId: string | null = null;
+  let hoveredSourceLayer: string | null = null;
   let lastPoint: maplibregl.Point | null = null;
   let lastLngLat: maplibregl.LngLat | null = null;
 
+  function clearHover() {
+    if (hoveredId !== null && hoveredSourceId && hoveredSourceLayer) {
+      map.setFeatureState(
+        { source: hoveredSourceId, sourceLayer: hoveredSourceLayer, id: hoveredId },
+        { hover: false },
+      );
+    }
+    hoveredId = null;
+    hoveredSourceId = null;
+    hoveredSourceLayer = null;
+  }
+
+  function setHover(sourceId: string, sourceLayer: string, id: string | number) {
+    if (id === hoveredId && sourceId === hoveredSourceId) return;
+    clearHover();
+    hoveredId = id;
+    hoveredSourceId = sourceId;
+    hoveredSourceLayer = sourceLayer;
+    map.setFeatureState({ source: sourceId, sourceLayer, id }, { hover: true });
+  }
+
   selectedAdmin.subscribe(() => {
     popup.remove();
+    clearHover();
     lastPoint = null;
     lastLngLat = null;
   });
@@ -73,6 +86,7 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
   });
 
   selectedSource.subscribe((newSource) => {
+    clearHover();
     if (!lastPoint || !lastLngLat) return;
 
     const level = get(selectedAdmin);
@@ -81,9 +95,9 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
 
     const layerId = `${newSource}-adm${level}-fill`;
     const sourceId = `${newSource}-adm${level}`;
+    const sourceLayer = `${newSource}_adm${level}`;
     const point = lastPoint;
     const lngLat = lastLngLat;
-    const codeField = srcDef.codeField.replace("{level}", String(level));
     const labels = get(labelsEnabled);
 
     const tryUpdate = () => {
@@ -91,13 +105,8 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
       if (!features.length) return false;
 
       // Restore hover highlight for the new source
-      const codeValue = features[0].properties?.[codeField];
-      const iso3 = get(selectedIso3);
-      if (codeValue != null && codeValue !== "" && iso3) {
-        map.setFilter(
-          `${newSource}-adm${level}-hover`,
-          buildHoverFilter(srcDef, codeField, codeValue, iso3),
-        );
+      if (features[0].id != null) {
+        setHover(sourceId, sourceLayer, features[0].id);
       }
 
       if (labels) return true;
@@ -124,19 +133,15 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
   for (const src of ADMIN_SOURCES) {
     for (const level of src.levels) {
       const layerId = `${src.id}-adm${level}-fill`;
+      const sourceId = `${src.id}-adm${level}`;
+      const sourceLayer = `${src.id}_adm${level}`;
 
       map.on("mousemove", layerId, (e) => {
         if (!e.features?.length) return;
         lastPoint = e.point;
         lastLngLat = e.lngLat;
-        const codeField = src.codeField.replace("{level}", String(level));
-        const codeValue = e.features[0].properties?.[codeField];
-        const iso3 = get(selectedIso3);
-        if (codeValue != null && codeValue !== "" && iso3) {
-          map.setFilter(
-            `${src.id}-adm${level}-hover`,
-            buildHoverFilter(src, codeField, codeValue, iso3),
-          );
+        if (e.features[0].id != null) {
+          setHover(sourceId, sourceLayer, e.features[0].id);
         }
         if (get(labelsEnabled)) return;
         const html = buildPopupHtml(e.features[0].properties ?? {}, src, level);
@@ -148,7 +153,7 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
       map.on("mouseleave", layerId, () => {
         map.getCanvas().style.cursor = "";
         popup.remove();
-        map.setFilter(`${src.id}-adm${level}-hover`, ["==", ["get", src.countryCodeField], ""]);
+        clearHover();
         lastPoint = null;
         lastLngLat = null;
       });
