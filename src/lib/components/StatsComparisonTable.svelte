@@ -2,6 +2,10 @@
   import { selectSource, selectSourceLevel } from "$lib/map/admin";
   import { mapStore, selectedAdmin, selectedSource } from "$lib/map/store";
   import { getIso3166ForCountry, type Iso3166 } from "$lib/parquet/iso3166";
+  import {
+    getMapboxBoundariesForCountry,
+    type MapboxBoundaries,
+  } from "$lib/parquet/mapboxBoundaries";
   import { getProvenanceForCountry, type SourceProvenance } from "$lib/parquet/sourceProvenance";
   import { getStatsForCountry, type SourceStat } from "$lib/parquet/sourceStats";
   import { getDecisionForIso3, type Decision } from "$lib/sheet/decisions";
@@ -18,6 +22,7 @@
   let decision: Decision | null = $state(null);
   let provenance: SourceProvenance[] = $state([]);
   let iso3166: Iso3166 | null = $state(null);
+  let mapboxBoundaries: MapboxBoundaries | null = $state(null);
 
   function onSourceClick(sourceId: string) {
     selectSource(get(mapStore), iso3, sourceId);
@@ -120,6 +125,19 @@
     };
   });
 
+  $effect(() => {
+    const current = iso3;
+    let cancelled = false;
+    getMapboxBoundariesForCountry(current).then((m) => {
+      if (cancelled) return;
+      mapboxBoundaries = m;
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  });
+
   interface SourceCol {
     id: string;
     label: string;
@@ -148,6 +166,7 @@
   <table>
     <colgroup>
       <col class="level-col" />
+      <col class="mapbox-col" />
       {#each cols as col (col.id)}
         <col />
       {/each}
@@ -155,6 +174,7 @@
     <thead>
       <tr>
         <th class="plain-cell">Level</th>
+        <th class="mapbox-col"></th>
         {#each cols as col (col.id)}
           <th
             class:active-col={col.id === $selectedSource}
@@ -183,6 +203,24 @@
     <tbody>
       <tr>
         <td class="plain-cell">Source</td>
+        <td class="mapbox-col">
+          {#if mapboxBoundaries?.iso2}
+            <a
+              class="mapbox-link"
+              href="https://demos.mapbox.com/boundaries-explorer/?country={mapboxBoundaries.iso2}"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Mapbox
+              <span class="iso-ref-tip"
+                >Mapbox Boundaries admin unit counts — opens the Mapbox Boundaries Explorer for this
+                country</span
+              >
+            </a>
+          {:else}
+            <span class="muted">Mapbox</span>
+          {/if}
+        </td>
         {#each cols as col (col.id)}
           <td class="provider-cell" class:active-col={col.id === $selectedSource}>
             {#if col.provenance?.provider}
@@ -209,6 +247,20 @@
                   >ISO 3166-2 subdivision count for this country — opens iso.org/obp</span
                 >
               </a>
+            {/if}
+          </td>
+          <td class="mapbox-col">
+            {#if mapboxBoundaries?.iso2 && mapboxBoundaries.counts[level] != null}
+              <a
+                class="mapbox-cell-link"
+                href="https://demos.mapbox.com/boundaries-explorer/?country={mapboxBoundaries.iso2}&layer=adm{level}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {formatCount(mapboxBoundaries.counts[level])}
+              </a>
+            {:else}
+              <span class="muted">—</span>
             {/if}
           </td>
           {#each cols as col (col.id)}
@@ -263,6 +315,30 @@
 
   .level-col {
     width: 56px;
+  }
+
+  .mapbox-col {
+    width: 52px;
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+
+  .mapbox-link,
+  .mapbox-cell-link {
+    position: relative;
+    display: block;
+    color: #999;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .mapbox-link:hover,
+  .mapbox-cell-link:hover {
+    text-decoration: underline;
+  }
+
+  .mapbox-link:hover .iso-ref-tip {
+    display: block;
   }
 
   th,
