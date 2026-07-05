@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getDecisionForIso3, type Decision } from "$lib/sheet/decisions";
   import LabelsToggle from "./LabelsToggle.svelte";
   import StatsComparisonTable from "./StatsComparisonTable.svelte";
 
@@ -7,11 +8,35 @@
   }
 
   let { iso3 }: Props = $props();
+  let decision: Decision | null = $state(null);
+
+  $effect(() => {
+    const current = iso3;
+    if (!current) {
+      decision = null;
+      return;
+    }
+
+    let cancelled = false;
+    getDecisionForIso3(current).then((d) => {
+      if (cancelled) return;
+      decision = d;
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  });
 </script>
 
 <div class="stats-panel">
   <div class="stats-header">
-    <h2>Compare sources</h2>
+    <div class="title-group">
+      <h2>Compare sources</h2>
+      {#if iso3 && decision?.rationale}
+        <span class="rationale">— {decision.rationale}</span>
+      {/if}
+    </div>
     {#if iso3}
       <div class="header-controls">
         <p class="hint">
@@ -44,10 +69,17 @@
 
   .stats-header {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
     gap: 16px;
     margin-bottom: 10px;
+  }
+
+  .title-group {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
   }
 
   h2 {
@@ -55,6 +87,7 @@
     font-size: 14px;
     font-weight: 600;
     color: #1a1a1a;
+    flex-shrink: 0;
   }
 
   .header-controls {
@@ -95,5 +128,11 @@
   .muted {
     color: #999;
     font-size: 12px;
+  }
+
+  .rationale {
+    font-size: 12px;
+    color: #777;
+    min-width: 0;
   }
 </style>

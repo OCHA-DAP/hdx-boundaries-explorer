@@ -1,32 +1,22 @@
 import { parseCsv } from "./csv";
 
-export type DecisionStatus = "no_opinion" | "undecided" | "unanimous";
-
-export const DECISION_STATUS_LABELS: Record<DecisionStatus, string> = {
-  no_opinion: "No opinion",
-  undecided: "Undecided (option in mind)",
-  unanimous: "Unanimous decision",
-};
-
-const STATUS_BY_LABEL: Record<string, DecisionStatus> = {
-  "no opinion": "no_opinion",
-  "undecided (option in mind)": "undecided",
-  "unanimous decision": "unanimous",
-};
-
 export interface Decision {
   iso3: string;
   countryName: string;
   selectedSource: string | null;
-  status: DecisionStatus;
+  accepted: boolean;
   rationale: string;
   lastUpdated: string | null;
 }
 
 const SHEET_URL = import.meta.env.VITE_DECISIONS_SHEET_URL as string | undefined;
 
-function parseStatus(raw: string): DecisionStatus {
-  return STATUS_BY_LABEL[raw.trim().toLowerCase()] ?? "no_opinion";
+export function acceptedLabel(accepted: boolean): string {
+  return accepted ? "Accepted" : "Pending";
+}
+
+function parseAccepted(raw: string): boolean {
+  return raw.trim().toLowerCase() === "true";
 }
 
 function rowsToDecisions(rows: string[][]): Map<string, Decision> {
@@ -38,7 +28,7 @@ function rowsToDecisions(rows: string[][]): Map<string, Decision> {
   const iso3Col = col("iso3");
   const nameCol = col("country_name");
   const sourceCol = col("selected_source");
-  const statusCol = col("status");
+  const acceptedCol = col("accepted");
   const rationaleCol = col("rationale");
   const updatedCol = col("last_updated");
 
@@ -54,7 +44,7 @@ function rowsToDecisions(rows: string[][]): Map<string, Decision> {
       iso3,
       countryName: nameCol !== -1 ? (row[nameCol]?.trim() ?? "") : "",
       selectedSource: selectedSource || null,
-      status: statusCol !== -1 ? parseStatus(row[statusCol] ?? "") : "no_opinion",
+      accepted: acceptedCol !== -1 ? parseAccepted(row[acceptedCol] ?? "") : false,
       rationale: rationaleCol !== -1 ? (row[rationaleCol]?.trim() ?? "") : "",
       lastUpdated: updatedCol !== -1 ? row[updatedCol]?.trim() || null : null,
     });

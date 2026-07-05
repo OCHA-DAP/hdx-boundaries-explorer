@@ -5,11 +5,10 @@
   import { mapStore, selectedIso3, selectedSource } from "$lib/map/store";
   import { getCountries, type Country } from "$lib/parquet/countries";
   import { getAllPlanStatus, type PlanStatus } from "$lib/parquet/planStatus";
-  import { DECISION_STATUS_LABELS, getDecisions, type Decision } from "$lib/sheet/decisions";
+  import { acceptedLabel, getDecisions, type Decision } from "$lib/sheet/decisions";
   import { ADMIN_SOURCES } from "$lib/sources";
   import { onMount } from "svelte";
   import { get } from "svelte/store";
-  import DecisionPanel from "./DecisionPanel.svelte";
   import RelevanceBadge from "./RelevanceBadge.svelte";
 
   interface Row {
@@ -22,7 +21,7 @@
   let rows: Row[] = $state([]);
   let loading = $state(true);
   let filter = $state("");
-  let sortKey: "relevance" | "name" | "status" = $state("relevance");
+  let sortKey: "relevance" | "name" | "accepted" = $state("relevance");
 
   onMount(async () => {
     const [countries, plans, decisions]: [
@@ -55,10 +54,10 @@
   let sorted: Row[] = $derived(
     [...filtered].sort((a, b) => {
       if (sortKey === "name") return a.name.localeCompare(b.name);
-      if (sortKey === "status") {
-        const statusA = a.decision?.status ?? "no_opinion";
-        const statusB = b.decision?.status ?? "no_opinion";
-        return statusA.localeCompare(statusB);
+      if (sortKey === "accepted") {
+        const acceptedA = a.decision?.accepted ?? false;
+        const acceptedB = b.decision?.accepted ?? false;
+        return Number(acceptedA) - Number(acceptedB);
       }
       const rankA = a.plan?.rank ?? 5;
       const rankB = b.plan?.rank ?? 5;
@@ -97,14 +96,6 @@
     <p class="lede">Ranked by humanitarian plan status to help prioritize decisions.</p>
   </div>
 
-  <div class="controls">
-    {#if $selectedIso3}
-      <DecisionPanel iso3={$selectedIso3} />
-    {:else}
-      <p class="muted">Select a country below to see source options and decisions.</p>
-    {/if}
-  </div>
-
   <div class="toolbar">
     <input type="text" placeholder="Filter by name or ISO3…" bind:value={filter} />
     <div class="field">
@@ -112,7 +103,7 @@
       <select id="sort-select" bind:value={sortKey}>
         <option value="relevance">Humanitarian relevance</option>
         <option value="name">Country name</option>
-        <option value="status">Decision status</option>
+        <option value="accepted">Decision status</option>
       </select>
     </div>
   </div>
@@ -136,9 +127,9 @@
               planType={row.plan?.planType ?? null}
               planYear={row.plan?.planYear ?? null}
             />
-            {#if row.decision && row.decision.status !== "no_opinion"}
-              <span class="decision-tag">
-                {DECISION_STATUS_LABELS[row.decision.status]}
+            {#if row.decision && (row.decision.accepted || row.decision.selectedSource)}
+              <span class="decision-tag" class:accepted={row.decision.accepted}>
+                {acceptedLabel(row.decision.accepted)}
                 {#if row.decision.selectedSource}
                   · {sourceLabel(row.decision.selectedSource)}
                 {/if}
@@ -153,7 +144,7 @@
 
 <style>
   .sidebar {
-    width: 320px;
+    width: 400px;
     flex-shrink: 0;
     height: 100vh;
     display: flex;
@@ -205,20 +196,6 @@
     font-size: 12px;
     color: #555;
     margin: 0;
-  }
-
-  .controls {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px;
-    border-bottom: 1px solid #eee;
-  }
-
-  .muted {
-    margin: 0;
-    font-size: 12px;
-    color: #999;
   }
 
   .toolbar {
@@ -279,7 +256,8 @@
     border-bottom: 1px solid #f2f2f2;
     padding: 6px 16px;
     cursor: pointer;
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 32px 84px 116px;
     align-items: center;
     gap: 8px;
     font-family: inherit;
@@ -299,23 +277,24 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    flex: 1;
     min-width: 0;
   }
 
   .iso3 {
     font-size: 10px;
     color: #999;
-    flex-shrink: 0;
   }
 
   .decision-tag {
     font-size: 10px;
     color: #555;
-    flex-shrink: 0;
-    max-width: 120px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .decision-tag.accepted {
+    color: #1a7a3c;
+    font-weight: 600;
   }
 </style>

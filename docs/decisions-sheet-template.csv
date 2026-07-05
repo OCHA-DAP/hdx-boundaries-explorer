@@ -1,0 +1,4 @@
+iso3,country_name,selected_source,accepted,rationale,last_updated
+AFG,Afghanistan,ocha,TRUE,OCHA CODs are the most complete and actively maintained for this country,2026-01-15
+KEN,Kenya,,FALSE,,
+SOM,Somalia,wfp,FALSE,WFP boundaries better match field reality but OCHA is still under discussion,2026-03-02
