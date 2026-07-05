@@ -1,7 +1,10 @@
 <script lang="ts">
   import { selectSource, selectSourceLevel } from "$lib/map/admin";
   import { mapStore, selectedAdmin, selectedSource } from "$lib/map/store";
+  import { getIso3166ForCountry, type Iso3166 } from "$lib/parquet/iso3166";
+  import { getProvenanceForCountry, type SourceProvenance } from "$lib/parquet/sourceProvenance";
   import { getStatsForCountry, type SourceStat } from "$lib/parquet/sourceStats";
+  import { getDecisionForIso3, type Decision } from "$lib/sheet/decisions";
   import { ADMIN_SOURCES } from "$lib/sources";
   import { get } from "svelte/store";
 
@@ -12,6 +15,9 @@
   let { iso3 }: Props = $props();
   let stats: SourceStat[] = $state([]);
   let loading = $state(true);
+  let decision: Decision | null = $state(null);
+  let provenance: SourceProvenance[] = $state([]);
+  let iso3166: Iso3166 | null = $state(null);
 
   function onSourceClick(sourceId: string) {
     selectSource(get(mapStore), iso3, sourceId);
@@ -75,10 +81,50 @@
     };
   });
 
+  $effect(() => {
+    const current = iso3;
+    let cancelled = false;
+    getDecisionForIso3(current).then((d) => {
+      if (cancelled) return;
+      decision = d;
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  $effect(() => {
+    const current = iso3;
+    let cancelled = false;
+    getProvenanceForCountry(current).then((p) => {
+      if (cancelled) return;
+      provenance = p;
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  $effect(() => {
+    const current = iso3;
+    let cancelled = false;
+    getIso3166ForCountry(current).then((i) => {
+      if (cancelled) return;
+      iso3166 = i;
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  });
+
   interface SourceCol {
     id: string;
     label: string;
     levels: Record<number, SourceStat | undefined>;
+    provenance: SourceProvenance | undefined;
   }
 
   let cols: SourceCol[] = $derived(
@@ -91,6 +137,7 @@
           stats.find((s) => s.source === source.id && s.level === level),
         ]),
       ),
+      provenance: provenance.find((p) => p.source === source.id),
     })),
   );
 </script>
@@ -99,26 +146,76 @@
   <p class="muted">Loading stats…</p>
 {:else}
   <table>
+    <colgroup>
+      <col class="level-col" />
+      {#each cols as col (col.id)}
+        <col />
+      {/each}
+    </colgroup>
     <thead>
       <tr>
         <th class="plain-cell">Level</th>
         {#each cols as col (col.id)}
-          <th class:active-col={col.id === $selectedSource}>
+          <th
+            class:active-col={col.id === $selectedSource}
+            class:team-pick={col.id === decision?.selectedSource}
+            class:accepted={col.id === decision?.selectedSource && decision?.accepted}
+          >
             <button class="source-btn" onclick={() => onSourceClick(col.id)}>
               {col.label}
+              {#if col.id === decision?.selectedSource}
+                <span
+                  class="team-badge"
+                  class:accepted={decision?.accepted}
+                  title={decision?.accepted
+                    ? "Team's accepted source"
+                    : "Team's selected source (not yet accepted)"}>✓</span
+                >
+              {/if}
+              {#if col.provenance?.sourceUpdated}
+                <span class="source-updated">{col.provenance.sourceUpdated}</span>
+              {/if}
             </button>
           </th>
         {/each}
       </tr>
     </thead>
     <tbody>
+      <tr>
+        <td class="plain-cell">Source</td>
+        {#each cols as col (col.id)}
+          <td class="provider-cell" class:active-col={col.id === $selectedSource}>
+            {#if col.provenance?.provider}
+              {col.provenance.provider}
+            {:else}
+              <span class="muted">—</span>
+            {/if}
+          </td>
+        {/each}
+      </tr>
       {#each LEVELS as level (level)}
         <tr class:active-row={level === $selectedAdmin}>
-          <td class="plain-cell">Adm {level}</td>
+          <td class="plain-cell">
+            Adm {level}
+            {#if level === 1 && iso3166?.subdivisionCount != null}
+              <a
+                class="iso-ref"
+                href="https://www.iso.org/obp/ui/#iso:code:3166:{iso3166.iso2}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                ISO: {iso3166.subdivisionCount}
+                <span class="iso-ref-tip"
+                  >ISO 3166-2 subdivision count for this country — opens iso.org/obp</span
+                >
+              </a>
+            {/if}
+          </td>
           {#each cols as col (col.id)}
             <td
               class:active-col={col.id === $selectedSource}
               class:active-cell={col.id === $selectedSource && level === $selectedAdmin}
+              class:team-pick={col.id === decision?.selectedSource}
             >
               {#if col.levels[level]}
                 <button class="cell-btn" onclick={() => onCellClick(col.id, level)}>
@@ -160,7 +257,12 @@
 <style>
   table {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
+  }
+
+  .level-col {
+    width: 56px;
   }
 
   th,
@@ -181,6 +283,13 @@
 
   .plain-cell {
     padding: 4px 6px;
+  }
+
+  .provider-cell {
+    padding: 4px 6px;
+    color: #666;
+    font-size: 10px;
+    white-space: normal;
   }
 
   .muted {
@@ -225,6 +334,48 @@
     font-weight: 600;
   }
 
+  .source-updated {
+    margin-left: 4px;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
+    color: #999;
+    font-size: 9px;
+  }
+
+  .iso-ref {
+    position: relative;
+    display: block;
+    color: #999;
+    font-size: 9px;
+    text-decoration: none;
+  }
+
+  .iso-ref:hover {
+    text-decoration: underline;
+  }
+
+  .iso-ref-tip {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 10;
+    width: 160px;
+    white-space: normal;
+    background: #333;
+    color: #fff;
+    font-size: 11px;
+    font-family: sans-serif;
+    padding: 4px 8px;
+    border-radius: 4px;
+    pointer-events: none;
+  }
+
+  .iso-ref:hover .iso-ref-tip {
+    display: block;
+  }
+
   .source-btn:hover,
   .cell-btn:hover {
     background: #f0f4ff;
@@ -238,6 +389,27 @@
 
   td.active-cell {
     background: #dce6fd;
+  }
+
+  th.team-pick {
+    box-shadow: inset 0 3px 0 #bbb;
+  }
+
+  th.team-pick.accepted {
+    box-shadow: inset 0 3px 0 #1a7a3c;
+  }
+
+  td.team-pick {
+    box-shadow: inset 3px 0 0 #eee;
+  }
+
+  .team-badge {
+    margin-left: 3px;
+    color: #999;
+  }
+
+  .team-badge.accepted {
+    color: #1a7a3c;
   }
 
   td.active-cell .cell-btn:hover {

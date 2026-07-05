@@ -15,6 +15,7 @@ npm run format       # Auto-format with prettier
 npm run download             # Download all data + compute plan status and comparison stats
 npm run download:m49         # Scrape UN M49 table and write static/parquet/m49.parquet
 npm run download:plan-status # Rank countries by humanitarian plan status (static/parquet/plan_status.parquet)
+npm run download:iso3166     # Fetch ISO 3166-2 subdivision counts per country (static/parquet/iso3166.parquet)
 npm run download:ocha        # Download OCHA boundaries via scripts/ocha.sh
 npm run download:wfp         # Download WFP boundaries via scripts/wfp.sh
 npm run download:unhcr       # Download UNHCR boundaries via scripts/unhcr.sh
@@ -49,6 +50,7 @@ Uses `adapter-static` (fully static site, deployed to GitHub Pages; `paths.base`
 
 - `scripts/m49.py` — scrapes the UN M49 country table and writes `static/parquet/m49.parquet` (via a temp CSV + DuckDB)
 - `scripts/plan_status.py` — fetches OCHA HPC Tools plan data (`api.hpc.tools/v2/public/plan`) for every year since 2000, ranks each country by best-ever plan type (HNRP > HRP > FA > REG > Other > none, mirroring `hdx-cod-ab-status`'s `woPlanTypeRank`), and writes `static/parquet/plan_status.parquet`. Must run after `download:m49`.
+- `scripts/iso3166.py` — fetches Debian's `iso-codes` mirror of the ISO 3166-2 standard (`salsa.debian.org/iso-codes-team/iso-codes`, since `iso.org/obp` has no public API and blocks scraping), counts subdivision codes per country, and writes `static/parquet/iso3166.parquet` (iso3, iso2, subdivision_count). Must run after `download:m49` (joins on ISO-alpha2 Code). Deliberately fetches without a browser-like User-Agent header — Salsa's Anubis bot-check challenges spoofed browser UAs but passes a plain script-like one. Surfaced in `StatsComparisonTable` next to the "Adm 1" row label as a reference count, linking out to the matching `iso.org/obp` page.
 - `scripts/ocha.sh` — downloads OCHA boundaries (admin levels 1–4) from GDB, reprojects to EPSG:4326, writes parquet + PMTiles
 - `scripts/wfp.sh` — downloads WFP boundary parquet files, reprojects to EPSG:4326, writes parquet + PMTiles
 - `scripts/unhcr.sh` — downloads UNHCR boundaries (admin levels 1–2) from ESRI JSON, reprojects to EPSG:4326, writes parquet + PMTiles
