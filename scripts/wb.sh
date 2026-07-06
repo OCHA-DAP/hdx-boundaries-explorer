@@ -4,7 +4,7 @@ set -euo pipefail
 mkdir -p static/parquet static/pmtiles tmp
 trap 'rm -rf tmp' EXIT
 
-BASE_URL="https://datacatalogfiles.worldbank.org/ddh-published/0038272/5/DR0095370/World%20Bank%20Official%20Boundaries%20%28GeoPackage%29"
+BASE_URL="https://datacatalogfiles.worldbank.org/ddh-published/0038272/2/DR0095370/World%20Bank%20Official%20Boundaries%20%28GeoPackage%29"
 
 for level in 1 2; do
   name="wb_adm${level}"
