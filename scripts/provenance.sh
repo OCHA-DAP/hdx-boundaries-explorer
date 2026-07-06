@@ -2,17 +2,24 @@
 set -euo pipefail
 
 # Per-source provenance (data provider, date the source was last updated).
-# OCHA has no provenance fields embedded in its boundary layer, so it's built
-# from a raw export committed under scripts/data/provenance/ — periodically
-# replaced by hand whenever a contributor submits an updated snapshot (format
-# varies submission to submission — see the extraction notes below). WFP,
-# UNHCR, World Bank, and UNGIS/SALB all carry provenance directly in their
-# downloaded boundary layers, which is richer and more current than any
-# hand-compiled snapshot of them, so those are read straight from
+# OCHA and FAO have no provenance fields embedded in their boundary layers, so
+# they're built from raw exports committed under scripts/data/provenance/ —
+# periodically replaced by hand whenever a contributor submits an updated
+# snapshot (format varies submission to submission — see the extraction notes
+# below). WFP, UNHCR, World Bank, and UNGIS/SALB all carry provenance directly
+# in their downloaded boundary layers, which is richer and more current than
+# any hand-compiled snapshot of them, so those are read straight from
 # static/parquet/*.parquet instead. Must run after every download:<source>
-# script. UNICEF and FAO have no usable provenance field in their layers (the
-# closest UNICEF gets is SALB_ID/WFP_ID/UNDP_ID cross-reference columns, but
-# those overlap too much per row to reliably indicate a single true source).
+# script. UNICEF has no usable provenance field in its layer (the closest it
+# gets is SALB_ID/WFP_ID/UNDP_ID cross-reference columns, but those overlap
+# too much per row to reliably indicate a single true source).
+#
+# fao.csv's provider column is condensed from FAO's per-country GAUL 2025
+# citation spreadsheet (verbose academic-style citations, one per country)
+# down to just the attributed institution/dataset, matching the brevity of
+# ocha.csv's provider text — no accessed-date/URL/licence boilerplate. No
+# source_updated: the spreadsheet only gives FAO's access date, not a
+# genuine per-country boundary update date.
 RAW_DIR="scripts/data/provenance"
 OUT_PARQUET="static/parquet/source_provenance.parquet"
 OUT_CSV="static/parquet/source_provenance.csv"
@@ -45,6 +52,9 @@ duckdb -c "
   CREATE TABLE provenance AS
     SELECT 'ocha' AS source, iso3, provider, source_updated::DATE AS source_updated
     FROM read_csv('${RAW_DIR}/ocha.csv', header=true)
+  UNION ALL
+    SELECT 'fao' AS source, iso3, provider, NULL::DATE AS source_updated
+    FROM read_csv('${RAW_DIR}/fao.csv', header=true)
   UNION ALL
     SELECT 'wfp' AS source, iso3, provider,
       CASE WHEN source_updated IN (SELECT baseline_date FROM wfp_baseline)
