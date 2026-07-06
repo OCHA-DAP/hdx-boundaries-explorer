@@ -1,13 +1,14 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { page } from "$app/state";
   import { selectCountry, selectSource } from "$lib/map/admin";
   import { mapStore, selectedIso3, selectedSource } from "$lib/map/store";
   import { getCountries, type Country } from "$lib/parquet/countries";
   import { getAllPlanStatus, type PlanStatus } from "$lib/parquet/planStatus";
   import { acceptedLabel, getDecisions, type Decision } from "$lib/sheet/decisions";
   import { ADMIN_SOURCES } from "$lib/sources";
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import { get } from "svelte/store";
   import RelevanceBadge from "./RelevanceBadge.svelte";
 
@@ -22,6 +23,7 @@
   let loading = $state(true);
   let filter = $state("");
   let sortKey: "relevance" | "name" | "accepted" = $state("relevance");
+  let listEl: HTMLUListElement | undefined = $state();
 
   onMount(async () => {
     const [countries, plans, decisions]: [
@@ -36,6 +38,14 @@
       decision: decisions.get(c.iso3) ?? null,
     }));
     loading = false;
+
+    const initialIso3 = page.url.searchParams.get("country")?.toUpperCase();
+    if (initialIso3) {
+      await tick();
+      listEl
+        ?.querySelector<HTMLElement>(`[data-iso3="${initialIso3}"]`)
+        ?.scrollIntoView({ block: "center" });
+    }
   });
 
   function sourceLabel(id: string | null): string {
@@ -111,13 +121,14 @@
   {#if loading}
     <p class="empty">Loading countries…</p>
   {:else}
-    <ul class="country-list">
+    <ul class="country-list" bind:this={listEl}>
       {#each sorted as row (row.iso3)}
         <li>
           <button
             type="button"
             class="country-row"
             class:selected={row.iso3 === $selectedIso3}
+            data-iso3={row.iso3}
             onclick={() => selectRow(row.iso3)}
           >
             <span class="name">{row.name}</span>
