@@ -4,6 +4,10 @@ export interface Decision {
   iso3: string;
   countryName: string;
   selectedSource: string | null;
+  // True when the sheet's selected_source cell is the literal text "null" —
+  // a deliberate "none of our sources are suitable" call, distinct from a
+  // blank cell (no decision made yet).
+  noSourceSuitable: boolean;
   accepted: boolean;
   rationale: string;
   lastUpdated: string | null;
@@ -38,12 +42,15 @@ function rowsToDecisions(rows: string[][]): Map<string, Decision> {
     const iso3 = row[iso3Col]?.trim().toUpperCase();
     if (!iso3) continue;
 
-    const selectedSource = sourceCol !== -1 ? (row[sourceCol]?.trim() ?? "") : "";
+    const rawSource = sourceCol !== -1 ? (row[sourceCol]?.trim() ?? "") : "";
+    const noSourceSuitable = rawSource.toLowerCase() === "null";
+    const selectedSource = noSourceSuitable ? "" : rawSource;
 
     map.set(iso3, {
       iso3,
       countryName: nameCol !== -1 ? (row[nameCol]?.trim() ?? "") : "",
       selectedSource: selectedSource || null,
+      noSourceSuitable,
       accepted: acceptedCol !== -1 ? parseAccepted(row[acceptedCol] ?? "") : false,
       rationale: rationaleCol !== -1 ? (row[rationaleCol]?.trim() ?? "") : "",
       lastUpdated: updatedCol !== -1 ? row[updatedCol]?.trim() || null : null,

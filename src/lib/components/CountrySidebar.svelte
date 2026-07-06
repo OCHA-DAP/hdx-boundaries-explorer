@@ -127,7 +127,9 @@
               planType={row.plan?.planType ?? null}
               planYear={row.plan?.planYear ?? null}
             />
-            {#if row.decision && (row.decision.accepted || row.decision.selectedSource)}
+            {#if row.decision?.noSourceSuitable}
+              <span class="decision-tag none">None suitable</span>
+            {:else if row.decision && (row.decision.accepted || row.decision.selectedSource)}
               <span class="decision-tag" class:accepted={row.decision.accepted}>
                 {acceptedLabel(row.decision.accepted)}
                 {#if row.decision.selectedSource}
@@ -296,5 +298,10 @@
   .decision-tag.accepted {
     color: #1a7a3c;
     font-weight: 600;
+  }
+
+  .decision-tag.none {
+    color: #a33;
+    font-style: italic;
   }
 </style>

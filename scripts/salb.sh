@@ -37,14 +37,14 @@ download_layer() {
       --lco USE_PARQUET_GEO_TYPES=YES \
       --overwrite
 
-  # Add hover_id (iso3 + admin code) for admin-level layers only (salb_adm0
-  # already has a real unique id promoted from objectid; salb_lines isn't
-  # hover-interactive) — see scripts/ocha.sh for why.
+  # Add hover_id: a plain per-file row index, for admin-level layers only
+  # (salb_adm0 already has a real unique id promoted from objectid;
+  # salb_lines isn't hover-interactive) — see scripts/ocha.sh for why.
   if [[ -n "$hover_level" ]]; then
     local tmp_hoverid="tmp/${name}_hoverid.parquet"
     duckdb -c "
       COPY (
-        SELECT *, iso3cd || '_' || coalesce(adm${hover_level}cd, '') AS hover_id
+        SELECT *, row_number() OVER () AS hover_id
         FROM '${parquet}'
       ) TO '${tmp_hoverid}' (FORMAT PARQUET, COMPRESSION ZSTD, COMPRESSION_LEVEL 15);
     "

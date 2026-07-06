@@ -42,11 +42,9 @@ export function addAdminHoverInteraction(map: maplibregl.Map): void {
   });
 
   // Hover highlighting is driven by feature-state keyed off each admin
-  // source's promoted hover_id (iso3 + admin code, computed at download
-  // time — see scripts/*.sh), so multi-polygon admin units that share one
-  // code (e.g. archipelagos split across many rows) highlight as a group,
-  // and the id is inherently country-scoped so it can never bleed across
-  // countries or collide on a blank/placeholder code.
+  // source's promoted hover_id (a plain per-row index, computed at download
+  // time — see scripts/*.sh), so it's always unique to one row regardless
+  // of how reliable a given source's own admin-code fields are.
   let hoveredId: string | number | null = null;
   let hoveredSourceId: string | null = null;
   let hoveredSourceLayer: string | null = null;

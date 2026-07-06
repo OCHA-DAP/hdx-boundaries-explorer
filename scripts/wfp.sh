@@ -25,11 +25,11 @@ for level in 1 2 3 4; do
       --overwrite
   rm "$tmp_dl"
 
-  # Add hover_id (iso3 + source_id) — see scripts/ocha.sh for why.
+  # Add hover_id: a plain per-file row index — see scripts/ocha.sh for why.
   tmp_hoverid="tmp/${name}_hoverid.parquet"
   duckdb -c "
     COPY (
-      SELECT *, iso3 || '_' || coalesce(source_id, '') AS hover_id
+      SELECT *, row_number() OVER () AS hover_id
       FROM '${parquet}'
     ) TO '${tmp_hoverid}' (FORMAT PARQUET, COMPRESSION ZSTD, COMPRESSION_LEVEL 15);
   "

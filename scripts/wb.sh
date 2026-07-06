@@ -27,11 +27,11 @@ for level in 1 2; do
       --lco USE_PARQUET_GEO_TYPES=YES \
       --overwrite
 
-  # Add hover_id (iso3 + admin code) — see scripts/ocha.sh for why.
+  # Add hover_id: a plain per-file row index — see scripts/ocha.sh for why.
   tmp_hoverid="tmp/${name}_hoverid.parquet"
   duckdb -c "
     COPY (
-      SELECT *, ISO_A3 || '_' || coalesce(ADM${level}CD_c, '') AS hover_id
+      SELECT *, row_number() OVER () AS hover_id
       FROM '${parquet}'
     ) TO '${tmp_hoverid}' (FORMAT PARQUET, COMPRESSION ZSTD, COMPRESSION_LEVEL 15);
   "

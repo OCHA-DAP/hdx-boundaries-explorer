@@ -18,9 +18,8 @@ const admSources = Object.fromEntries(
         {
           type: "vector" as const,
           url: pmtiles(`${src.id}_adm${l}.pmtiles`),
-          // hover_id (iso3 + admin code, computed at download time) groups
-          // multi-polygon admin units — e.g. archipelagos split across many
-          // rows sharing one code — under a single feature id for hover.
+          // hover_id (a plain per-row index, computed at download time) lets
+          // MapLibre's promoteId/feature-state target one row precisely.
           promoteId: { [`${src.id}_adm${l}`]: "hover_id" },
         },
       ],

@@ -40,7 +40,7 @@ There are no tests configured yet.
 - `src/lib/map/basemap/positron.json` — a vendored, committed copy of OpenFreeMap's `positron` style (see `scripts/basemap.sh`), with all `source-layer: "boundary"` layers (international, subnational, disputed) stripped out so they don't compete with this app's own boundary overlays. `src/lib/map/style.ts` merges its `sources`/`layers`/`sprite`/`glyphs` in as the base map, with `countries`/`country-lines`/per-source admin layers stacked on top. Re-run `npm run download:basemap` to refresh it from upstream (OpenFreeMap's style has proven fairly stable — a handful of commits a year post-launch, per repo history)
 - `src/lib/parquet/` — client-side helpers for querying parquet files with `hyparquet` (a pure-JS reader; there is no DuckDB-WASM/SQL engine in the browser — aggregate values like vertex counts are precomputed at data-build time instead, see Data pipeline)
 - `src/lib/sheet/` — reads the team's boundary-decision Google Sheet (published-to-web CSV, read-only) via a hand-rolled RFC4180 `parseCsv` and `decisions.ts`
-- `src/lib/sources.ts` — defines the 7 available boundary sources (OCHA, WFP, UNICEF, UNHCR, UNGIS/SALB, FAO, World Bank) and their admin levels
+- `src/lib/sources.ts` — defines the 7 available boundary sources (OCHA, WFP, UNICEF, UNHCR, SALB, FAO, World Bank) and their admin levels
 - `static/` — assets served as-is; parquet and pmtiles files live here (not committed)
 
 The project is an explorer for HDX (Humanitarian Data Exchange) geographic boundaries, and a decision-support tool for choosing which source to use per country. MapLibre GL (`maplibre-gl`) is the primary mapping library. Data is served from pre-built PMTiles (vector tiles) and Parquet files queried client-side.
@@ -68,8 +68,9 @@ Uses `adapter-static` (fully static site, deployed to GitHub Pages; `paths.base`
 
 - The app **reads but never writes** a team-maintained Google Sheet of per-country boundary-source decisions — contributors edit the sheet directly, outside the app.
 - Configure via `VITE_DECISIONS_SHEET_URL`, a "File → Share → Publish to web" CSV URL for the decisions tab (see `.env.example`). If unset, decision UI shows empty/default state.
-- Expected columns (case-insensitive): `iso3`, `country_name` (human aid, not read programmatically), `selected_source` (one of the lowercase ids in `ADMIN_SOURCES`, or blank), `accepted` (boolean — literal `TRUE`/`FALSE` as exported by a Google Sheets checkbox cell; blank or anything else parses as `false`, meaning no decision yet), `rationale` (free text), `last_updated` (free text, displayed verbatim).
-- In `CountrySidebar`'s country list, a country only gets a decision tag when `accepted` is `true` or it has a `selected_source` set — untouched rows stay untagged so the list scans cleanly.
+- Expected columns (case-insensitive): `iso3`, `country_name` (human aid, not read programmatically), `selected_source` (one of the lowercase ids in `ADMIN_SOURCES`, blank, or the literal text `null` — see below), `accepted` (boolean — literal `TRUE`/`FALSE` as exported by a Google Sheets checkbox cell; blank or anything else parses as `false`, meaning no decision yet), `rationale` (free text), `last_updated` (free text, displayed verbatim).
+- A `selected_source` cell containing the literal text `null` is a deliberate "none of our sources are suitable" call, distinct from a blank cell (no decision made yet) — `decisions.ts` surfaces this as `Decision.noSourceSuitable`, which `CountrySidebar` renders as a "None suitable" tag instead of the usual Accepted/Pending + source tag.
+- In `CountrySidebar`'s country list, a country only gets a decision tag when `accepted` is `true`, it has a `selected_source` set, or `noSourceSuitable` is true — untouched rows stay untagged so the list scans cleanly.
 - `src/lib/sheet/decisions.ts` fetches with `{ cache: "no-store" }` and does **not** memoize across the app's lifetime, since the sheet changes outside of a deploy — `CountrySidebar` fetches its own copy on mount. A fetch failure (offline, CORS misconfiguration, sheet unpublished) degrades to an empty result rather than throwing.
 
 ## UI conventions

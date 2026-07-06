@@ -257,7 +257,7 @@
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {formatCount(mapboxBoundaries.counts[level])}
+                {mapboxBoundaries.counts[level].toLocaleString()}
               </a>
             {:else}
               <span class="muted">—</span>
