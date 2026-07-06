@@ -101,9 +101,8 @@
 
 <aside class="sidebar">
   <div class="sidebar-header">
-    <h1>HDX Boundaries <span class="beta">beta</span></h1>
-    <p class="subtitle">For internal use only</p>
-    <p class="lede">Ranked by humanitarian plan status to help prioritize decisions.</p>
+    <div class="wordmark">HDX</div>
+    <h1>Boundaries Explorer</h1>
   </div>
 
   <div class="toolbar">
@@ -171,44 +170,25 @@
   .sidebar-header {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 2px;
     padding: 16px;
     border-bottom: 1px solid #eee;
   }
 
+  .wordmark {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    color: #2060a0;
+    text-transform: uppercase;
+  }
+
   h1 {
     margin: 0;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 600;
     letter-spacing: -0.01em;
-  }
-
-  h1 .beta {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: #fff;
-    background: #e8621a;
-    border-radius: 3px;
-    padding: 2px 5px 0;
-    vertical-align: middle;
-    position: relative;
-    top: -2px;
-  }
-
-  .subtitle {
-    font-size: 11px;
-    color: #888;
-    margin: 0;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-  }
-
-  .lede {
-    font-size: 12px;
-    color: #555;
-    margin: 0;
+    color: #1a3a5c;
   }
 
   .toolbar {

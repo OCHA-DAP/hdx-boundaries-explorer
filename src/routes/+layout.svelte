@@ -5,6 +5,7 @@
 </script>
 
 <svelte:head>
+  <title>HDX Boundaries Explorer</title>
   <link rel="icon" href={favicon} />
 </svelte:head>
 
