@@ -82,6 +82,8 @@ download_layer() {
       --force \
       --maximum-zoom=g \
       --no-tile-size-limit \
+      --drop-rate=1 \
+      --no-feature-limit \
       "$tmp_labels"
     rm "$tmp_labels"
   fi
