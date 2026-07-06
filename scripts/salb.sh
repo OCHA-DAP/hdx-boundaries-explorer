@@ -70,7 +70,7 @@ download_layer() {
       LOAD spatial;
       COPY (
         SELECT * EXCLUDE (geometry, geometry_bbox),
-               ST_MaximumInscribedCircle(geometry).center AS geometry
+               ST_MaximumInscribedCircle(geometry, 1e-6).center AS geometry
         FROM '${parquet}'
       ) TO '${tmp_labels_parquet}';
     "
