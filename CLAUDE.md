@@ -73,6 +73,25 @@ Uses `adapter-static` (fully static site, deployed to GitHub Pages; `paths.base`
 - In `CountrySidebar`'s country list, a country only gets a decision tag when `accepted` is `true`, it has a `selected_source` set, or `noSourceSuitable` is true — untouched rows stay untagged so the list scans cleanly.
 - `src/lib/sheet/decisions.ts` fetches with `{ cache: "no-store" }` and does **not** memoize across the app's lifetime, since the sheet changes outside of a deploy — `CountrySidebar` fetches its own copy on mount. A fetch failure (offline, CORS misconfiguration, sheet unpublished) degrades to an empty result rather than throwing.
 
+## Evaluating which source is most accurate for a country
+
+When asked "which source is most accurate for country X" (or to explain a feature-count mismatch), run this sequence instead of exploring from scratch:
+
+1. **Feature counts**: `SELECT * FROM 'static/parquet/source_stats.parquet' WHERE iso3='XXX' ORDER BY source, level` — the first signal; divergent counts across sources at the same level are the thing to explain.
+2. **Ground-truth anchor**: `SELECT * FROM 'static/parquet/iso3166.parquet' WHERE iso3='XXX'` — `subdivision_count` approximates the official top-tier count (ISO 3166-2). Not exact for every country (e.g. it includes/excludes autonomous entities like Greece's Mount Athos), but a fast sanity check.
+3. **Provenance**: `SELECT * FROM 'static/parquet/source_provenance.parquet' WHERE iso3='XXX'` — provider + `source_updated` date, a first clue toward staleness.
+4. **Pull actual admin-unit names** per source at the level(s) that diverge, then diff them with SQL `EXCEPT` to classify the difference. Per-source name/filter columns (file is `static/parquet/{source}_adm{N}.parquet`):
+   - `wfp`: filter `iso3='XXX'`, name is `adm{N}_name`
+   - `unicef`: filter `adm0_ucode LIKE 'XXX%'` (no direct iso3 column), name is `name`
+   - `unhcr`: filter `iso3='XXX'`, name is `gis_name` (pcode in `pcode`)
+   - `fao`: filter `ISO3_CODE='XXX'`, name is `GAUL{N}_NAME`
+   - `wb`: filter `ISO_A3='XXX'`, name is `NAM_{N}`
+   - `salb`: filter `iso3cd='XXX'`, name is `adm{N}nm` — **gotcha**: `romnam` is the constant country name, not the admin-unit name; don't mistake it for the unit label (it'll look like a single "unit" per country if you do)
+   - A diff typically resolves into: (a) harmless spelling/transliteration variants (e.g. `ts`/`c`, diacritics) — pair them off and ignore; (b) genuine extra/missing units — look for junk placeholder rows (`N_A`, `Name Unknown`, `Under National Administration`, a row repeating the country's own name) that inflate a count without being real subdivisions; (c) a tier mismatch — one source's adm1 count is suspiciously close to another source's adm2 count, meaning it's using a coarser/finer official tier, not a wrong dataset (confirm by comparing name lists across tiers, not just counts).
+5. **Web-search the country's actual official administrative structure** (region/province count, municipality count, and any reform dates) — reforms that merge or split units are the most common cause of a source being "stale": check whether a source still lists old constituent units separately instead of the current merged unit.
+6. If staleness is suspected (old sub-units alongside a new merged unit), confirm with DuckDB spatial rather than guessing: `LOAD spatial; SELECT name, ST_Area(geometry) FROM ... WHERE name IN (...)` — the merged unit's area should be small relative to the old sub-units it was supposed to absorb if the source never actually merged them (as opposed to overlapping/duplicate geometry, which would show the merged unit's area roughly equal to the sum of the parts).
+7. **Check the decisions sheet** for whether the team already made a call: `curl -s "$(grep VITE_DECISIONS_SHEET_URL .env | cut -d= -f2-)" | grep -i "^XXX,\|,XXX,"`.
+
 ## UI conventions
 
 - Each dropdown is wrapped in a `<div class="field">` with `display: flex; flex-direction: column; gap: 4px` so the label sits tight above its select
