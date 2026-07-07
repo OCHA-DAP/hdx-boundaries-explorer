@@ -12,6 +12,14 @@ set -euo pipefail
 # complement of that gap, unwrapped past 180 if the gap turned out not to be the
 # ordinary wrap-around one. This also degrades correctly for ordinary countries
 # (the largest gap is just the wrap-around one, giving the usual min/max).
+#
+# ymin/ymax are aggregated from the same per-vertex dump as lon, rather than
+# pulled from GDAL's per-feature geometry_bbox column via a join back to the
+# source table — a country with more than one adm0 row (e.g. GBR, which SALB
+# carries as both a "United Kingdom" feature and a stray "Northern Ireland
+# (United Kingdom)" feature, both tagged iso3cd=GBR) would otherwise fan out
+# that join into one output row per feature, and whichever row happened to
+# land last when written to parquet would silently win at read time.
 IN="static/parquet/salb_adm0.parquet"
 OUT="static/parquet/country_bbox.parquet"
 
@@ -23,10 +31,15 @@ OUT="static/parquet/country_bbox.parquet"
 duckdb -c "
   LOAD spatial;
   COPY (
-    WITH pts AS (
-      SELECT DISTINCT iso3cd AS iso3,
-        ST_X((UNNEST(ST_Dump(ST_Points(geometry)))).geom) AS lon
+    WITH dumped AS (
+      SELECT iso3cd AS iso3, (UNNEST(ST_Dump(ST_Points(geometry)))).geom AS pt
       FROM '${IN}'
+    ),
+    pts AS (
+      SELECT DISTINCT iso3, ST_X(pt) AS lon, ST_Y(pt) AS lat FROM dumped
+    ),
+    lat_bounds AS (
+      SELECT iso3, min(lat) AS ymin, max(lat) AS ymax FROM pts GROUP BY iso3
     ),
     sorted AS (
       SELECT iso3, lon,
@@ -49,9 +62,9 @@ duckdb -c "
         CASE WHEN next_lon IS NULL THEN lon ELSE lon + 360 END AS xmax
       FROM ranked WHERE rk = 1
     )
-    SELECT f.iso3, f.xmin, s.geometry_bbox.ymin AS ymin, f.xmax, s.geometry_bbox.ymax AS ymax
+    SELECT f.iso3, f.xmin, lb.ymin, f.xmax, lb.ymax
     FROM fit_lon f
-    JOIN '${IN}' s ON s.iso3cd = f.iso3
+    JOIN lat_bounds lb ON lb.iso3 = f.iso3
   ) TO '${OUT}' (FORMAT PARQUET, COMPRESSION ZSTD, COMPRESSION_LEVEL 15);
 "
 
