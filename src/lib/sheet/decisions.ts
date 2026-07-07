@@ -60,12 +60,24 @@ function rowsToDecisions(rows: string[][]): Map<string, Decision> {
   return map;
 }
 
-// Not memoized: the sheet is edited live by contributors outside of a deploy,
-// so each caller fetches fresh rather than sharing one eternal cached promise.
-export async function getDecisions(): Promise<Map<string, Decision>> {
-  if (!SHEET_URL) return new Map();
+// Memoized for the page's lifetime, like every other loader in $lib/parquet —
+// the sheet is edited rarely enough that a reload is an acceptable way to
+// pick up changes. Without this, every country click re-fetched the whole
+// CSV from Google Sheets from scratch (CountrySidebar on mount, StatsPanel
+// and StatsComparisonTable on every iso3 change) — a real network round trip
+// gating the "team's pick" checkmark, visible as lag even though every other
+// per-country lookup here is a memoized, already-loaded parquet file.
+let decisionsPromise: Promise<Map<string, Decision>> | null = null;
+
+export function getDecisions(): Promise<Map<string, Decision>> {
+  if (!SHEET_URL) return Promise.resolve(new Map());
+  if (!decisionsPromise) decisionsPromise = fetchDecisions();
+  return decisionsPromise;
+}
+
+async function fetchDecisions(): Promise<Map<string, Decision>> {
   try {
-    const res = await fetch(SHEET_URL, { cache: "no-store" });
+    const res = await fetch(SHEET_URL as string, { cache: "no-store" });
     if (!res.ok) return new Map();
     const text = await res.text();
     return rowsToDecisions(parseCsv(text));
