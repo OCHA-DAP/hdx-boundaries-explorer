@@ -1,9 +1,42 @@
 import { getBboxForIso3 } from "$lib/parquet/bbox";
-import { getStatsForCountry } from "$lib/parquet/sourceStats";
+import { getStatsForCountry, type SourceStat } from "$lib/parquet/sourceStats";
+import { getDecisionForIso3, type Decision } from "$lib/sheet/decisions";
 import { ADMIN_SOURCES, getLevelsForSource } from "$lib/sources";
 import type maplibregl from "maplibre-gl";
 import { get } from "svelte/store";
 import { labelsEnabled, selectedAdmin, selectedIso3, selectedSource } from "./store";
+
+function sourceHasData(stats: SourceStat[], source: string): boolean {
+  return stats.some((s) => s.source === source && s.featureCount > 0);
+}
+
+// Deepest ("lowest" in admin-hierarchy terms — most granular, e.g. admin4
+// over admin1) configured level for `source` that has data for this
+// country, or the source's deepest configured level if none has data.
+function pickDeepestLevelWithData(stats: SourceStat[], source: string): number {
+  const levels = getLevelsForSource(source);
+  if (levels.length === 0) return 1;
+
+  const hasData = (l: number) =>
+    stats.some((s) => s.source === source && s.level === l && s.featureCount > 0);
+  return [...levels].reverse().find(hasData) ?? levels[levels.length - 1];
+}
+
+// The configured level for `source` with the most admin units for this
+// country — not simply the deepest level with any data, since a deeper
+// level is sometimes only partially populated (e.g. admin4 defined for a
+// single city) while a shallower level has full national coverage and far
+// more total units. Used only for the default level shown on country
+// selection; manual source switching keeps pickLevel/pickDeepestLevelWithData's
+// "deepest level with any data" semantics.
+function pickLevelWithMostUnits(stats: SourceStat[], source: string): number {
+  const levels = getLevelsForSource(source);
+  if (levels.length === 0) return 1;
+
+  const featureCount = (l: number) =>
+    stats.find((s) => s.source === source && s.level === l)?.featureCount ?? 0;
+  return levels.reduce((best, l) => (featureCount(l) > featureCount(best) ? l : best), levels[0]);
+}
 
 // Resolves which level to show for a source/country: keeps `level` if that
 // source actually has data at that level for this country, otherwise falls
@@ -18,7 +51,23 @@ async function pickLevel(iso3: string, source: string, level: number): Promise<n
     stats.some((s) => s.source === source && s.level === l && s.featureCount > 0);
 
   if (levels.includes(level as (typeof levels)[number]) && hasData(level)) return level;
-  return [...levels].reverse().find(hasData) ?? levels[levels.length - 1];
+  return pickDeepestLevelWithData(stats, source);
+}
+
+// Resolves the default source when a country is first selected: the team's
+// pick from the decisions sheet if it has data — accepted or still
+// pending, since a pending pick is still the team's stated preference —
+// else the first ADMIN_SOURCES entry (in priority order) with data. Returns
+// null — meaning "leave selection as-is" — when the team explicitly decided
+// no source is suitable, or when nothing has any data for this country.
+function resolveDefaultSource(decision: Decision | null, stats: SourceStat[]): string | null {
+  if (decision?.noSourceSuitable) return null;
+
+  if (decision?.selectedSource && sourceHasData(stats, decision.selectedSource)) {
+    return decision.selectedSource;
+  }
+
+  return ADMIN_SOURCES.find((s) => sourceHasData(stats, s.id))?.id ?? null;
 }
 
 // Fits the map to a country's bbox. Split out from selectCountry so it can also
@@ -37,19 +86,28 @@ export async function fitCountryBounds(map: maplibregl.Map, iso3: string): Promi
   );
 }
 
-// Sets the selected country, fits the map to its bbox, and applies the current
-// source/level filter (resolving to a level with data for this country).
-// Shared by CountrySidebar's row clicks and the page's initial ?country=
-// query-param handling so both go through the same sequence.
+// Sets the selected country, fits the map to its bbox, resolves the default
+// source for this country (team decision, else priority-list fallback — see
+// resolveDefaultSource) at the level with the most admin units, and applies
+// the resulting source/level filter. Shared by CountrySidebar's row clicks
+// and the page's initial ?country= query-param handling so both go through
+// the same sequence. Always re-resolves the source on every call — there's
+// no stickiness of a previously-selected source across country switches.
 export async function selectCountry(map: maplibregl.Map | null, iso3: string): Promise<void> {
   selectedIso3.set(iso3);
   if (!iso3) return;
 
-  const [, level] = await Promise.all([
+  const [, stats, decision] = await Promise.all([
     map ? fitCountryBounds(map, iso3) : Promise.resolve(),
-    pickLevel(iso3, get(selectedSource), get(selectedAdmin)),
+    getStatsForCountry(iso3),
+    getDecisionForIso3(iso3),
   ]);
-  selectedAdmin.set(level);
+
+  const source = resolveDefaultSource(decision, stats);
+  if (source !== null) {
+    selectedSource.set(source);
+    selectedAdmin.set(pickLevelWithMostUnits(stats, source));
+  }
 
   if (!map) return;
   applyAdminFilter(map, iso3);

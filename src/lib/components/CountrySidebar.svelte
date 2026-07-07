@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { page } from "$app/state";
   import { selectCountry, selectSource } from "$lib/map/admin";
   import { mapStore, selectedIso3, selectedSource } from "$lib/map/store";
   import { getCountries, type Country } from "$lib/parquet/countries";
@@ -38,14 +37,21 @@
       decision: decisions.get(c.iso3) ?? null,
     }));
     loading = false;
+  });
 
-    const initialIso3 = page.url.searchParams.get("country")?.toUpperCase();
-    if (initialIso3) {
-      await tick();
+  // Scrolls the selected country's row to the middle of the list whenever the
+  // selection changes — covers the initial ?country= query-param load and
+  // clicking a country directly on the map (CountrySidebar's own row clicks
+  // already have the row in view since the user just clicked it).
+  $effect(() => {
+    const iso3 = $selectedIso3;
+    if (!iso3 || loading) return;
+
+    tick().then(() => {
       listEl
-        ?.querySelector<HTMLElement>(`[data-iso3="${initialIso3}"]`)
+        ?.querySelector<HTMLElement>(`[data-iso3="${iso3}"]`)
         ?.scrollIntoView({ block: "center" });
-    }
+    });
   });
 
   function sourceLabel(id: string | null): string {
