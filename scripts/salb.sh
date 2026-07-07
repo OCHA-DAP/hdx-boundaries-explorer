@@ -80,7 +80,7 @@ download_layer() {
       --output "static/pmtiles/${name}_labels.pmtiles" \
       --layer "${name}_labels" \
       --force \
-      --maximum-zoom=g \
+      --maximum-zoom=16 \
       --no-tile-size-limit \
       --drop-rate=1 \
       --no-feature-limit \
