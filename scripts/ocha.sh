@@ -11,22 +11,31 @@ trap 'rm -rf tmp' EXIT
 url=$(curl -fsSL "$API" | jq -r --arg f "$FILENAME" '.result.resources[] | select(.name == $f) | .url')
 curl -fL "$url" -o "tmp/ocha.gdb.zip"
 
-# Extract
-unzip -q "tmp/ocha.gdb.zip" -d tmp/
+# Extract. HDX's zip has no wrapping "*.gdb" directory of its own (just the
+# raw *.gdbtable/*.gdbtablx files at the zip root), and GDAL's OpenFileGDB
+# driver only recognizes a directory as a geodatabase by its .gdb suffix, so
+# extract straight into a directory we name ourselves.
+gdb="tmp/ocha.gdb"
+mkdir -p "$gdb"
+unzip -q "tmp/ocha.gdb.zip" -d "$gdb"
 rm "tmp/ocha.gdb.zip"
-gdb=$(find tmp -maxdepth 2 -name "*.gdb" -type d | head -1)
 
 for level in 1 2 3 4; do
   name="ocha_adm${level}"
   layer="admin${level}"
   parquet="static/parquet/${name}.parquet"
 
-  # Make geometries valid and write compressed parquet directly from GDB
+  # Make geometries valid and write compressed parquet directly from GDB.
+  # make-valid can reduce a MultiPolygon feature down to a single Polygon
+  # (e.g. one that collapses to one ring after fixing self-intersections),
+  # which then fails ICreateFeature against the layer's MultiPolygon type,
+  # so re-promote to MULTI afterward.
   gdal vector pipeline \
     ! read "$gdb" --input-layer "$layer" \
     ! reproject --dst-crs EPSG:4326 \
     ! set-field-type --src-field-type DateTime --dst-field-type Date \
     ! make-valid \
+    ! set-geom-type --multi \
     ! write "$parquet" \
       --config OGR_ORGANIZE_POLYGONS ONLY_CCW \
       --lco COMPRESSION=ZSTD \
