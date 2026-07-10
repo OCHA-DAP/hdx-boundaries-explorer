@@ -23,6 +23,7 @@
   let filter = $state("");
   let sortKey: "relevance" | "name" | "accepted" = $state("relevance");
   let listEl: HTMLUListElement | undefined = $state();
+  let skipNextCenter = false;
 
   onMount(async () => {
     const [countries, plans, decisions]: [
@@ -41,11 +42,18 @@
 
   // Scrolls the selected country's row to the middle of the list whenever the
   // selection changes — covers the initial ?country= query-param load and
-  // clicking a country directly on the map (CountrySidebar's own row clicks
-  // already have the row in view since the user just clicked it).
+  // clicking a country directly on the map. Skipped when the selection change
+  // came from clicking a row in this list itself (skipNextCenter), since the
+  // row is already in view and re-centering it under the user's cursor is
+  // disorienting.
   $effect(() => {
     const iso3 = $selectedIso3;
     if (!iso3 || loading) return;
+
+    if (skipNextCenter) {
+      skipNextCenter = false;
+      return;
+    }
 
     tick().then(() => {
       listEl
@@ -86,6 +94,7 @@
   );
 
   function selectRow(iso3: string) {
+    skipNextCenter = true;
     selectCountry(get(mapStore), iso3);
     goto(resolve(`/?country=${iso3}`), { replaceState: true, noScroll: true, keepFocus: true });
   }
