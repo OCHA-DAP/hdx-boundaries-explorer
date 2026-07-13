@@ -3,12 +3,14 @@
   import { resolve } from "$app/paths";
   import { selectCountry, selectSource } from "$lib/map/admin";
   import { mapStore, selectedIso3, selectedSource } from "$lib/map/store";
-  import { getCountries, type Country } from "$lib/parquet/countries";
+  import { getCountries } from "$lib/parquet/countries";
+  import { getAllOfficeTypes, type OfficeType } from "$lib/parquet/officeType";
   import { getAllPlanStatus, type PlanStatus } from "$lib/parquet/planStatus";
   import { acceptedLabel, getDecisions, type Decision } from "$lib/sheet/decisions";
   import { ADMIN_SOURCES } from "$lib/sources";
   import { onMount, tick } from "svelte";
   import { get } from "svelte/store";
+  import OfficeTypeBadge from "./OfficeTypeBadge.svelte";
   import RelevanceBadge from "./RelevanceBadge.svelte";
 
   interface Row {
@@ -16,26 +18,29 @@
     name: string;
     plan: PlanStatus | null;
     decision: Decision | null;
+    officeType: OfficeType | null;
   }
 
   let rows: Row[] = $state([]);
   let loading = $state(true);
   let filter = $state("");
-  let sortKey: "relevance" | "name" | "accepted" = $state("relevance");
+  let sortKey: "officeType" | "relevance" | "name" | "accepted" = $state("officeType");
   let listEl: HTMLUListElement | undefined = $state();
   let skipNextCenter = false;
 
   onMount(async () => {
-    const [countries, plans, decisions]: [
-      Country[],
-      Map<string, PlanStatus>,
-      Map<string, Decision>,
-    ] = await Promise.all([getCountries(), getAllPlanStatus(), getDecisions()]);
+    const [countries, plans, decisions, officeTypes] = await Promise.all([
+      getCountries(),
+      getAllPlanStatus(),
+      getDecisions(),
+      getAllOfficeTypes(),
+    ]);
     rows = countries.map((c) => ({
       iso3: c.iso3,
       name: c.name,
       plan: plans.get(c.iso3) ?? null,
       decision: decisions.get(c.iso3) ?? null,
+      officeType: officeTypes.get(c.iso3) ?? null,
     }));
     loading = false;
   });
@@ -62,9 +67,27 @@
     });
   });
 
+  // Abbreviated for the sidebar's narrow decision-source column — every
+  // other source's label is already short (OCHA, WFP, UNICEF, UNHCR, FAO,
+  // SALB); only World Bank's full label needs shortening here. The full
+  // "World Bank" label is still used elsewhere (e.g. StatsComparisonTable).
+  const SOURCE_LABEL_OVERRIDES: Record<string, string> = { wb: "WB" };
+
   function sourceLabel(id: string | null): string {
     if (!id) return "";
-    return ADMIN_SOURCES.find((s) => s.id === id)?.label ?? id;
+    return SOURCE_LABEL_OVERRIDES[id] ?? ADMIN_SOURCES.find((s) => s.id === id)?.label ?? id;
+  }
+
+  const OFFICE_TYPE_RANK: Record<OfficeType, number> = { CO: 0, RO: 1, HAT: 2 };
+
+  function relevanceCompare(a: Row, b: Row): number {
+    const rankA = a.plan?.rank ?? 5;
+    const rankB = b.plan?.rank ?? 5;
+    if (rankA !== rankB) return rankA - rankB;
+    const yearA = Number(a.plan?.planYear ?? -Infinity);
+    const yearB = Number(b.plan?.planYear ?? -Infinity);
+    if (yearA !== yearB) return yearB - yearA;
+    return a.name.localeCompare(b.name);
   }
 
   let filtered: Row[] = $derived(
@@ -83,13 +106,13 @@
         const acceptedB = b.decision?.accepted ?? false;
         return Number(acceptedA) - Number(acceptedB);
       }
-      const rankA = a.plan?.rank ?? 5;
-      const rankB = b.plan?.rank ?? 5;
-      if (rankA !== rankB) return rankA - rankB;
-      const yearA = Number(a.plan?.planYear ?? -Infinity);
-      const yearB = Number(b.plan?.planYear ?? -Infinity);
-      if (yearA !== yearB) return yearB - yearA;
-      return a.name.localeCompare(b.name);
+      if (sortKey === "officeType") {
+        const rankA = a.officeType ? OFFICE_TYPE_RANK[a.officeType] : 3;
+        const rankB = b.officeType ? OFFICE_TYPE_RANK[b.officeType] : 3;
+        if (rankA !== rankB) return rankA - rankB;
+        return relevanceCompare(a, b);
+      }
+      return relevanceCompare(a, b);
     }),
   );
 
@@ -125,6 +148,7 @@
     <div class="field">
       <label for="sort-select">Sort by</label>
       <select id="sort-select" bind:value={sortKey}>
+        <option value="officeType">OCHA office type</option>
         <option value="relevance">Humanitarian relevance</option>
         <option value="name">Country name</option>
         <option value="accepted">Decision status</option>
@@ -135,6 +159,22 @@
   {#if loading}
     <p class="empty">Loading countries…</p>
   {:else}
+    <div class="country-row-header">
+      <span class="header-label">Country</span>
+      <span class="header-label">ISO3</span>
+      <span class="header-label tooltip"
+        >Off<span class="tooltip-text">OCHA office type</span></span
+      >
+      <span class="header-label tooltip"
+        >Pln<span class="tooltip-text">Humanitarian plan relevance</span></span
+      >
+      <span class="header-label tooltip"
+        >Source<span class="tooltip-text">Team's selected source</span></span
+      >
+      <span class="header-label tooltip"
+        >Status<span class="tooltip-text">Decision status</span></span
+      >
+    </div>
     <ul class="country-list" bind:this={listEl}>
       {#each sorted as row (row.iso3)}
         <li>
@@ -147,20 +187,20 @@
           >
             <span class="name">{row.name}</span>
             <span class="iso3">{row.iso3}</span>
+            <OfficeTypeBadge officeType={row.officeType} />
             <RelevanceBadge
               rank={row.plan?.rank ?? 5}
               planType={row.plan?.planType ?? null}
               planYear={row.plan?.planYear ?? null}
             />
             {#if row.decision?.noSourceSuitable}
-              <span class="decision-tag none">None suitable</span>
+              <span class="decision-status none">None suitable</span>
             {:else if row.decision && (row.decision.accepted || row.decision.selectedSource)}
-              <span class="decision-tag" class:accepted={row.decision.accepted}>
-                {acceptedLabel(row.decision.accepted)}
-                {#if row.decision.selectedSource}
-                  · {sourceLabel(row.decision.selectedSource)}
-                {/if}
-              </span>
+              <span class="decision-source">{sourceLabel(row.decision.selectedSource)}</span>
+              <span class="decision-status">{acceptedLabel(row.decision.accepted)}</span>
+            {:else}
+              <span class="decision-source" aria-hidden="true"></span>
+              <span class="decision-status" aria-hidden="true"></span>
             {/if}
           </button>
         </li>
@@ -248,6 +288,52 @@
     padding: 16px;
   }
 
+  .country-row-header {
+    display: grid;
+    grid-template-columns: 1fr 32px 28px 28px 44px 50px;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border-bottom: 1px solid #eee;
+  }
+
+  .header-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #999;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    position: relative;
+  }
+
+  .header-label.tooltip .tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a1a1a;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+    z-index: 10;
+  }
+
+  .header-label.tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+  }
+
   .country-list {
     list-style: none;
     margin: 0;
@@ -265,7 +351,7 @@
     padding: 6px 16px;
     cursor: pointer;
     display: grid;
-    grid-template-columns: 1fr 32px 84px 116px;
+    grid-template-columns: 1fr 32px 28px 28px 44px 50px;
     align-items: center;
     gap: 8px;
     font-family: inherit;
@@ -293,20 +379,26 @@
     color: #999;
   }
 
-  .decision-tag {
+  .decision-source,
+  .decision-status {
     font-size: 10px;
-    color: #555;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .decision-tag.accepted {
-    color: #1a7a3c;
+  .decision-source {
+    color: #555;
     font-weight: 600;
   }
 
-  .decision-tag.none {
+  .decision-status {
+    color: #aaa;
+    font-weight: 400;
+  }
+
+  .decision-status.none {
+    grid-column: span 2;
     color: #a33;
     font-style: italic;
   }
