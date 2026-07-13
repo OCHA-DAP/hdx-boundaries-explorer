@@ -172,26 +172,32 @@ export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
           "visibility",
           showLabels ? "visible" : "none",
         );
-        map.setFilter(`${src.id}-adm${l}-fill`, [
+
+        const countryFilter: maplibregl.ExpressionSpecification = [
           "==",
           ["slice", ["get", src.countryCodeField], 0, 3],
           iso3,
-        ]);
-        map.setFilter(`${src.id}-adm${l}-hover`, [
-          "==",
-          ["slice", ["get", src.countryCodeField], 0, 3],
-          iso3,
-        ]);
-        map.setFilter(`${src.id}-adm${l}-line`, [
-          "==",
-          ["slice", ["get", src.countryCodeField], 0, 3],
-          iso3,
-        ]);
-        map.setFilter(`${src.id}-adm${l}-label`, [
-          "==",
-          ["slice", ["get", src.countryCodeField], 0, 3],
-          iso3,
-        ]);
+        ];
+        const excludeNames = [...(src.junkNameValues ?? []), ...(src.namedWaterBodies ?? [])];
+        const filter: maplibregl.FilterSpecification = excludeNames.length
+          ? [
+              "all",
+              countryFilter,
+              [
+                "!",
+                [
+                  "in",
+                  ["get", src.junkNameField!.replace("{level}", String(l))],
+                  ["literal", excludeNames],
+                ],
+              ],
+            ]
+          : countryFilter;
+
+        map.setFilter(`${src.id}-adm${l}-fill`, filter);
+        map.setFilter(`${src.id}-adm${l}-hover`, filter);
+        map.setFilter(`${src.id}-adm${l}-line`, filter);
+        map.setFilter(`${src.id}-adm${l}-label`, filter);
       }
     }
   }
