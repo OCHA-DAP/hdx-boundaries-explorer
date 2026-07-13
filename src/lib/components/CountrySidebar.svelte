@@ -160,13 +160,13 @@
     <p class="empty">Loading countries…</p>
   {:else}
     <div class="country-row-header">
-      <span class="header-label">Country</span>
+      <span class="header-label">Country or Area</span>
       <span class="header-label">ISO3</span>
       <span class="header-label tooltip"
-        >Off<span class="tooltip-text">OCHA office type</span></span
+        >Type<span class="tooltip-text">OCHA office type</span></span
       >
       <span class="header-label tooltip"
-        >Pln<span class="tooltip-text">Humanitarian plan relevance</span></span
+        >Plan<span class="tooltip-text">Humanitarian plan relevance</span></span
       >
       <span class="header-label tooltip"
         >Source<span class="tooltip-text">Team's selected source</span></span
