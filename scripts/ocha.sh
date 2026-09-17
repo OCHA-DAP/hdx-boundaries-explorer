@@ -40,6 +40,7 @@ for level in 1 2 3 4; do
       --config OGR_ORGANIZE_POLYGONS ONLY_CCW \
       --lco COMPRESSION=ZSTD \
       --lco COMPRESSION_LEVEL=15 \
+      --lco GEOMETRY_NAME=geometry \
       --lco USE_PARQUET_GEO_TYPES=YES \
       --overwrite
 
