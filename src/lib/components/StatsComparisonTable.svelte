@@ -6,6 +6,7 @@
     getMapboxBoundariesForCountry,
     type MapboxBoundaries,
   } from "$lib/parquet/mapboxBoundaries";
+  import { getMatchForCountry, type SourceMatch } from "$lib/parquet/sourceMatch";
   import { getProvenanceForCountry, type SourceProvenance } from "$lib/parquet/sourceProvenance";
   import { getStatsForCountry, type SourceStat } from "$lib/parquet/sourceStats";
   import { getDecisionForIso3, type Decision } from "$lib/sheet/decisions";
@@ -23,6 +24,7 @@
   let provenance: SourceProvenance[] = $state([]);
   let iso3166: Iso3166 | null = $state(null);
   let mapboxBoundaries: MapboxBoundaries | null = $state(null);
+  let matches: SourceMatch[] = $state([]);
 
   function onSourceClick(sourceId: string) {
     selectSource(get(mapStore), iso3, sourceId);
@@ -138,13 +140,29 @@
     };
   });
 
+  $effect(() => {
+    const current = iso3;
+    let cancelled = false;
+    getMatchForCountry(current).then((m) => {
+      if (cancelled) return;
+      matches = m;
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  });
+
   interface SourceCol {
     id: string;
     label: string;
     levels: Record<number, SourceStat | undefined>;
+    matches: Record<number, SourceMatch | undefined>;
     provenance: SourceProvenance | undefined;
   }
 
+  // A stored match row is only trusted while its preferredSource still matches the
+  // sheet's live pick, since the sheet may have changed since download:match last ran.
   let cols: SourceCol[] = $derived(
     ADMIN_SOURCES.map((source) => ({
       id: source.id,
@@ -153,6 +171,17 @@
         source.levels.map((level) => [
           level,
           stats.find((s) => s.source === source.id && s.level === level),
+        ]),
+      ),
+      matches: Object.fromEntries(
+        source.levels.map((level) => [
+          level,
+          matches.find(
+            (m) =>
+              m.source === source.id &&
+              m.level === level &&
+              m.preferredSource === decision?.selectedSource,
+          ),
         ]),
       ),
       provenance: provenance.find((p) => p.source === source.id),
@@ -281,6 +310,15 @@
                       col.levels[level]?.edgeVertices ?? 0,
                     )} out</span
                   >
+                  {#if col.id !== decision?.selectedSource && col.matches[level] && col.levels[level]?.featureCount}
+                    <span class="match-rate"
+                      >· {Math.round(
+                        (col.matches[level].matchedCount /
+                          Number(col.levels[level]?.featureCount ?? 1)) *
+                          100,
+                      )}% match</span
+                    >
+                  {/if}
                 </button>
               {:else}
                 <span class="muted">—</span>
@@ -374,6 +412,12 @@
 
   .vertex-hint {
     cursor: default;
+  }
+
+  .match-rate {
+    display: block;
+    color: #999;
+    font-size: 9px;
   }
 
   .tooltip {
