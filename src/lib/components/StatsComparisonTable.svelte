@@ -300,7 +300,8 @@
             >
               {#if col.levels[level]}
                 <button class="cell-btn" onclick={() => onCellClick(col.id, level)}>
-                  <span class="unit-count">{col.levels[level]?.featureCount.toLocaleString()} units</span
+                  <span class="unit-count"
+                    >{col.levels[level]?.featureCount.toLocaleString()} units</span
                   >
                   <span
                     class="muted vertex-hint"
@@ -313,11 +314,10 @@
                   >
                   <span></span>
                   <span class="match-rate"
-                    >{#if col.id !== decision?.selectedSource && col.matches[level] && col.levels[level]?.featureCount}{Math.round(
-                        (col.matches[level].matchedCount /
-                          Number(col.levels[level]?.featureCount ?? 1)) *
-                          100,
-                      )}% match{/if}</span
+                    >{#if col.id !== decision?.selectedSource && col.matches[level] && col.levels[level]?.featureCount}{@const total =
+                        Number(col.levels[level]?.featureCount ?? 1)}{Math.round(
+                        (col.matches[level].matchedCount / total) * 100,
+                      )}% match ({col.matches[level].matchedCount}/{total}){/if}</span
                   >
                 </button>
               {:else}

@@ -8,6 +8,8 @@ export interface SourceMatch {
   iso3: string;
   preferredSource: string;
   matchedCount: number;
+  // hover_id values (see scripts/match.py), not the source's own admin-unit code.
+  unmatchedCodes: number[];
 }
 
 let matchPromise: Promise<SourceMatch[]> | null = null;
@@ -18,7 +20,14 @@ function loadMatch(): Promise<SourceMatch[]> {
       new Promise((resolve) => {
         parquetRead({
           file: asyncBuffer,
-          columns: ["source", "level", "iso3", "preferred_source", "matched_count"],
+          columns: [
+            "source",
+            "level",
+            "iso3",
+            "preferred_source",
+            "matched_count",
+            "unmatched_codes",
+          ],
           compressors,
           rowFormat: "object",
           onComplete(rows) {
@@ -29,6 +38,7 @@ function loadMatch(): Promise<SourceMatch[]> {
                 iso3: string;
                 preferred_source: string;
                 matched_count: bigint | number;
+                unmatched_codes: (bigint | number)[];
               }>
             ).map((r) => ({
               source: r.source,
@@ -37,6 +47,7 @@ function loadMatch(): Promise<SourceMatch[]> {
               iso3: r.iso3,
               preferredSource: r.preferred_source,
               matchedCount: Number(r.matched_count),
+              unmatchedCodes: (r.unmatched_codes ?? []).map(Number),
             }));
             resolve(matches);
           },
