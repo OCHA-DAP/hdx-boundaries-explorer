@@ -82,7 +82,7 @@ PARQUET_DIR = Path("static/parquet")
 
 MATCH_QUERY = """
     WITH valid_units AS (
-        SELECT unit_id, source, level, ST_MakeValid(geometry) AS geometry
+        SELECT unit_id, source, level, unit_code, ST_MakeValid(geometry) AS geometry
         FROM units WHERE iso3 = ?
     ),
     candidate_sources AS (
@@ -94,7 +94,7 @@ MATCH_QUERY = """
           )
     ),
     pairs AS (
-        SELECT s.unit_id, s.source, s.level,
+        SELECT s.unit_id,
             MAX(
                 ST_Area_Spheroid(ST_Intersection(s.geometry, p.geometry))
                 / ST_Area_Spheroid(ST_Union(s.geometry, p.geometry))
@@ -102,13 +102,20 @@ MATCH_QUERY = """
         FROM valid_units s
         JOIN valid_units p ON p.level = s.level AND p.source = ?
         WHERE s.source != ? AND ST_Intersects(s.geometry, p.geometry)
-        GROUP BY s.unit_id, s.source, s.level
+        GROUP BY s.unit_id
+    ),
+    unit_status AS (
+        SELECT s.unit_id, s.unit_code, s.source, s.level,
+            COALESCE(pr.best_iou, 0) >= ? AS is_matched
+        FROM valid_units s
+        JOIN candidate_sources cs ON cs.source = s.source AND cs.level = s.level
+        LEFT JOIN pairs pr ON pr.unit_id = s.unit_id
     )
-    SELECT cs.source, cs.level, ? AS iso3, ? AS preferred_source,
-        COALESCE(COUNT(*) FILTER (WHERE pr.best_iou >= ?), 0)::BIGINT AS matched_count
-    FROM candidate_sources cs
-    LEFT JOIN pairs pr ON pr.source = cs.source AND pr.level = cs.level
-    GROUP BY cs.source, cs.level
+    SELECT source, level, ? AS iso3, ? AS preferred_source,
+        SUM(is_matched::INT)::BIGINT AS matched_count,
+        COALESCE(array_agg(unit_code) FILTER (WHERE NOT is_matched), []::BIGINT[]) AS unmatched_codes
+    FROM unit_status
+    GROUP BY source, level
 """
 
 
@@ -150,9 +157,12 @@ def build_units_sql(level: int) -> str | None:
             resolved_field = src.junk_field.replace("{level}", str(level))
             quoted = ", ".join(f"'{v}'" for v in src.junk_values)
             where_clause = f"WHERE {resolved_field} NOT IN ({quoted})"
+        # hover_id, not the source's own admin-code field: globally unique and non-null
+        # in every source parquet, unlike e.g. WFP's/UNICEF's codeField.
         parts.append(
             f"SELECT '{src.name}' AS source, {level} AS level, "
-            f"substr({src.iso3_field}, 1, 3) AS iso3, geometry "
+            f"substr({src.iso3_field}, 1, 3) AS iso3, "
+            f"hover_id AS unit_code, geometry "
             f"FROM read_parquet('{file}') {where_clause}"
         )
     return " UNION ALL ".join(parts) if parts else None
@@ -160,7 +170,7 @@ def build_units_sql(level: int) -> str | None:
 
 def run_level(
     level: int, threshold: float, decisions: list[tuple[str, str]]
-) -> list[tuple[str, int, str, str, int]]:
+) -> list[tuple[str, int, str, str, int, list[int]]]:
     units_sql = build_units_sql(level)
     if units_sql is None:
         print(f"[level {level}] no source parquet files found, skipping", file=sys.stderr)
@@ -172,13 +182,13 @@ def run_level(
     con.execute(
         f"""
         CREATE TABLE units AS
-            SELECT ROW_NUMBER() OVER () AS unit_id, source, level, iso3, geometry
+            SELECT ROW_NUMBER() OVER () AS unit_id, source, level, iso3, unit_code, geometry
             FROM ( {units_sql} )
         """
     )
     con.execute("CREATE INDEX idx_units_iso3 ON units(iso3)")
 
-    results: list[tuple[str, int, str, str, int]] = []
+    results: list[tuple[str, int, str, str, int, list[int]]] = []
     total = len(decisions)
     for i, (iso3, preferred_source) in enumerate(decisions, start=1):
         print(f"[level {level}] [{i}/{total}] {iso3} (preferred: {preferred_source})", file=sys.stderr)
@@ -191,9 +201,9 @@ def run_level(
                     preferred_source,
                     preferred_source,
                     preferred_source,
+                    threshold,
                     iso3,
                     preferred_source,
-                    threshold,
                 ],
             ).fetchall()
         except duckdb.Error as e:
@@ -205,13 +215,13 @@ def run_level(
     return results
 
 
-def write_output(rows: list[tuple[str, int, str, str, int]], output: Path) -> None:
+def write_output(rows: list[tuple[str, int, str, str, int, list[int]]], output: Path) -> None:
     con = duckdb.connect()
     con.execute(
         "CREATE TABLE new_rows (source VARCHAR, level INTEGER, iso3 VARCHAR, "
-        "preferred_source VARCHAR, matched_count BIGINT)"
+        "preferred_source VARCHAR, matched_count BIGINT, unmatched_codes BIGINT[])"
     )
-    con.executemany("INSERT INTO new_rows VALUES (?, ?, ?, ?, ?)", rows)
+    con.executemany("INSERT INTO new_rows VALUES (?, ?, ?, ?, ?, ?)", rows)
 
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(dir=output.parent, suffix=".parquet", delete=False) as f:
@@ -219,7 +229,7 @@ def write_output(rows: list[tuple[str, int, str, str, int]], output: Path) -> No
 
     if output.exists():
         select_sql = f"""
-            SELECT source, level, iso3, preferred_source, matched_count
+            SELECT source, level, iso3, preferred_source, matched_count, unmatched_codes
             FROM (
                 SELECT *, 0 AS priority FROM new_rows
                 UNION ALL
@@ -228,7 +238,9 @@ def write_output(rows: list[tuple[str, int, str, str, int]], output: Path) -> No
             QUALIFY ROW_NUMBER() OVER (PARTITION BY source, level, iso3 ORDER BY priority) = 1
         """
     else:
-        select_sql = "SELECT source, level, iso3, preferred_source, matched_count FROM new_rows"
+        select_sql = (
+            "SELECT source, level, iso3, preferred_source, matched_count, unmatched_codes FROM new_rows"
+        )
 
     con.execute(
         f"COPY ( {select_sql} ) TO '{tmp_path}' "

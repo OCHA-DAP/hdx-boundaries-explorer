@@ -1,4 +1,5 @@
 import { getBboxForIso3 } from "$lib/parquet/bbox";
+import { getMatchForCountry } from "$lib/parquet/sourceMatch";
 import { getStatsForCountry, type SourceStat } from "$lib/parquet/sourceStats";
 import { getDecisionForIso3, type Decision } from "$lib/sheet/decisions";
 import { ADMIN_SOURCES, getLevelsForSource } from "$lib/sources";
@@ -111,6 +112,7 @@ export async function selectCountry(map: maplibregl.Map | null, iso3: string): P
 
   if (!map) return;
   applyAdminFilter(map, iso3);
+  applyMismatchHighlight(map, iso3);
 }
 
 // Switches to a source, keeping the current admin level if it has data for
@@ -130,6 +132,7 @@ export async function selectSource(
 
   if (!map || !iso3) return;
   applyAdminFilter(map, iso3);
+  applyMismatchHighlight(map, iso3);
 }
 
 // Switches to an exact source/level pair. Used by StatsComparisonTable's cell
@@ -145,6 +148,7 @@ export function selectSourceLevel(
 
   if (!map || !iso3) return;
   applyAdminFilter(map, iso3);
+  applyMismatchHighlight(map, iso3);
 }
 
 let cancelPendingHide: (() => void) | null = null;
@@ -172,6 +176,9 @@ export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
           "visibility",
           showLabels ? "visible" : "none",
         );
+        // Left hidden here; applyMismatchHighlight (called right after this
+        // function) decides whether there's anything to highlight.
+        map.setLayoutProperty(`${src.id}-adm${l}-mismatch`, "visibility", "none");
 
         const countryFilter: maplibregl.ExpressionSpecification = [
           "==",
@@ -215,10 +222,12 @@ export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
           map.setLayoutProperty(`${src.id}-adm${l}-hover`, "visibility", "none");
           map.setLayoutProperty(`${src.id}-adm${l}-line`, "visibility", "none");
           map.setLayoutProperty(`${src.id}-adm${l}-label`, "visibility", "none");
+          map.setLayoutProperty(`${src.id}-adm${l}-mismatch`, "visibility", "none");
           map.setFilter(`${src.id}-adm${l}-fill`, ["==", ["get", src.countryCodeField], ""]);
           map.setFilter(`${src.id}-adm${l}-hover`, ["==", ["get", src.countryCodeField], ""]);
           map.setFilter(`${src.id}-adm${l}-line`, ["==", ["get", src.countryCodeField], ""]);
           map.setFilter(`${src.id}-adm${l}-label`, ["==", ["get", src.countryCodeField], ""]);
+          map.setFilter(`${src.id}-adm${l}-mismatch`, ["==", ["get", src.countryCodeField], ""]);
         }
       }
     }
@@ -229,6 +238,47 @@ export function applyAdminFilter(map: maplibregl.Map, iso3: string): void {
 
   map.on("render", onRender);
   cancelPendingHide = () => map.off("render", onRender);
+}
+
+// No highlight when the active source is the team's own pick (see StatsComparisonTable).
+export async function applyMismatchHighlight(map: maplibregl.Map, iso3: string): Promise<void> {
+  const activeSource = get(selectedSource);
+  const activeLevel = get(selectedAdmin);
+  const src = ADMIN_SOURCES.find((s) => s.id === activeSource);
+  const layerId = `${activeSource}-adm${activeLevel}-mismatch`;
+  if (!src) return;
+
+  const [decision, matches] = await Promise.all([
+    getDecisionForIso3(iso3),
+    getMatchForCountry(iso3),
+  ]);
+
+  // Bail if a newer selectSource/selectSourceLevel call landed while awaiting.
+  if (get(selectedSource) !== activeSource || get(selectedAdmin) !== activeLevel) return;
+
+  const preferredSource = decision?.selectedSource;
+  const match =
+    preferredSource && activeSource !== preferredSource
+      ? matches.find(
+          (m) =>
+            m.source === activeSource &&
+            m.level === activeLevel &&
+            m.preferredSource === preferredSource,
+        )
+      : undefined;
+
+  if (match && match.unmatchedCodes.length) {
+    // hover_id is a string in the vector tile's properties (unlike the BIGINT
+    // it decodes as from parquet), and MapLibre's "in"/"==" are type-strict.
+    map.setFilter(layerId, [
+      "all",
+      ["==", ["slice", ["get", src.countryCodeField], 0, 3], iso3],
+      ["in", ["to-string", ["get", "hover_id"]], ["literal", match.unmatchedCodes.map(String)]],
+    ]);
+    map.setLayoutProperty(layerId, "visibility", "visible");
+  } else {
+    map.setLayoutProperty(layerId, "visibility", "none");
+  }
 }
 
 export function initLabelsToggle(map: maplibregl.Map): void {
