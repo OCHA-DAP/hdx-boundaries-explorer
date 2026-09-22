@@ -300,25 +300,25 @@
             >
               {#if col.levels[level]}
                 <button class="cell-btn" onclick={() => onCellClick(col.id, level)}>
-                  {col.levels[level]?.featureCount.toLocaleString()} units
+                  <span class="unit-count">{col.levels[level]?.featureCount.toLocaleString()} units</span
+                  >
                   <span
                     class="muted vertex-hint"
                     role="note"
                     onmouseenter={showTooltip}
                     onmouseleave={hideTooltip}
-                    >· {formatCount(col.levels[level]?.internalVertices ?? 0)} in / {formatCount(
+                    >{formatCount(col.levels[level]?.internalVertices ?? 0)} in / {formatCount(
                       col.levels[level]?.edgeVertices ?? 0,
                     )} out</span
                   >
-                  {#if col.id !== decision?.selectedSource && col.matches[level] && col.levels[level]?.featureCount}
-                    <span class="match-rate"
-                      >· {Math.round(
+                  <span></span>
+                  <span class="match-rate"
+                    >{#if col.id !== decision?.selectedSource && col.matches[level] && col.levels[level]?.featureCount}{Math.round(
                         (col.matches[level].matchedCount /
                           Number(col.levels[level]?.featureCount ?? 1)) *
                           100,
-                      )}% match</span
-                    >
-                  {/if}
+                      )}% match{/if}</span
+                  >
                 </button>
               {:else}
                 <span class="muted">—</span>
@@ -412,12 +412,15 @@
 
   .vertex-hint {
     cursor: default;
+    color: #666;
+    font-size: 9px;
+    text-align: right;
   }
 
   .match-rate {
-    display: block;
-    color: #999;
+    color: #666;
     font-size: 9px;
+    text-align: right;
   }
 
   .tooltip {
@@ -452,6 +455,12 @@
 
   .source-btn {
     font-weight: 600;
+  }
+
+  .cell-btn {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px 6px;
   }
 
   .source-updated {

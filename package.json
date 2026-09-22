@@ -31,7 +31,7 @@
     "download:basemap": "bash scripts/basemap.sh",
     "download:provenance": "bash scripts/provenance.sh",
     "download:stats": "bash scripts/stats.sh",
-    "download:match": "bash scripts/match.sh",
+    "download:match": "uv run scripts/match.py",
     "download:bbox": "bash scripts/bbox.sh",
     "update": "npx npm-check-updates -u && npm install"
   },

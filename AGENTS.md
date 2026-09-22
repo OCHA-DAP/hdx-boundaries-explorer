@@ -51,6 +51,8 @@ Uses `adapter-static` (fully static site, deployed to GitHub Pages; `paths.base`
 
 ## Data pipeline
 
+New pipeline scripts are Python (stdlib `subprocess` calling `duckdb`/`gdal`, `uv run` with inline PEP 723 deps when an external package is needed). The `.sh` scripts are legacy, kept as-is rather than ported.
+
 - `scripts/m49.py` — scrapes the UN M49 country table and writes `static/parquet/m49.parquet` (via a temp CSV + DuckDB)
 - `scripts/plan_status.py` — fetches OCHA HPC Tools plan data (`api.hpc.tools/v2/public/plan`) for every year since 2000, ranks each country by best-ever plan type (HNRP > HRP > FA > REG > Other > none, mirroring `hdx-cod-ab-status`'s `woPlanTypeRank`), and writes `static/parquet/plan_status.parquet`. Must run after `download:m49`.
 - `scripts/iso3166.py` — fetches Debian's `iso-codes` mirror of the ISO 3166-2 standard (`salsa.debian.org/iso-codes-team/iso-codes`, since `iso.org/obp` has no public API and blocks scraping), counts subdivision codes per country, and writes `static/parquet/iso3166.parquet` (iso3, iso2, subdivision_count). Must run after `download:m49` (joins on ISO-alpha2 Code). Deliberately fetches without a browser-like User-Agent header — Salsa's Anubis bot-check challenges spoofed browser UAs but passes a plain script-like one. Surfaced in `StatsComparisonTable` next to the "Adm 1" row label as a reference count, linking out to the matching `iso.org/obp` page.
