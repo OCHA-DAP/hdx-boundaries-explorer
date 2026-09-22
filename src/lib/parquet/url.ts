@@ -5,8 +5,15 @@ const PMTILES_BASE =
 const PARQUET_BASE = PMTILES_BASE.replace(/\/pmtiles$/, "/parquet");
 
 export function parquetUrl(file: string): string {
-  const base = PARQUET_BASE.startsWith("/")
+  return `${resolvedBase()}/${file}.parquet`;
+}
+
+export function csvUrl(file: string): string {
+  return `${resolvedBase()}/${file}.csv`;
+}
+
+function resolvedBase(): string {
+  return PARQUET_BASE.startsWith("/")
     ? `${globalThis.location?.origin ?? ""}${PARQUET_BASE}`
     : PARQUET_BASE;
-  return `${base}/${file}.parquet`;
 }

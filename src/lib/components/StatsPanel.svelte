@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { csvUrl } from "$lib/parquet/url";
   import { getDecisionForIso3, type Decision } from "$lib/sheet/decisions";
   import LabelsToggle from "./LabelsToggle.svelte";
   import StatsComparisonTable from "./StatsComparisonTable.svelte";
@@ -37,15 +38,19 @@
         <span class="rationale">— {decision.rationale}</span>
       {/if}
     </div>
-    {#if iso3}
-      <div class="header-controls">
+    <div class="header-controls">
+      <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external R2 file download, not app navigation -->
+      <a class="download-link" href={csvUrl("source_comparison")} download>
+        Download all countries comparison (CSV)
+      </a>
+      {#if iso3}
         <p class="hint">
           [ ] to cycle sources
           <span class="tooltip">Use [ and ] to cycle through boundary sources</span>
         </p>
         <LabelsToggle />
-      </div>
-    {/if}
+      {/if}
+    </div>
   </div>
   {#if iso3}
     <StatsComparisonTable {iso3} />
@@ -94,6 +99,12 @@
     display: flex;
     align-items: center;
     gap: 16px;
+  }
+
+  .download-link {
+    font-size: 11px;
+    color: #555;
+    white-space: nowrap;
   }
 
   .hint {
