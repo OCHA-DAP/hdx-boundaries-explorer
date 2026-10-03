@@ -1,40 +1,60 @@
 <script lang="ts">
-  import { page } from "$app/state";
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import CountrySidebar from "$lib/components/CountrySidebar.svelte";
   import StatsPanel from "$lib/components/StatsPanel.svelte";
   import { initMap } from "$lib/map";
-  import { selectCountry } from "$lib/map/admin";
-  import { mapStore, selectedIso3 } from "$lib/map/store";
+  import { applyView } from "$lib/map/admin";
+  import { mapStore, selectedAdmin, selectedIso3, selectedSource } from "$lib/map/store";
+  import { viewFromUrl } from "$lib/urlState";
+  import type maplibregl from "maplibre-gl";
   import "maplibre-gl/dist/maplibre-gl.css";
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
 
   let mapContainer: HTMLDivElement;
+  let kiosk = $state(false);
 
   onMount(() => {
     const cleanup = initMap(mapContainer);
-    const initialIso3 = page.url.searchParams.get("country") ?? "";
 
-    const unsubscribe = mapStore.subscribe((map) => {
-      if (!map || !initialIso3) return;
-      if (map.loaded()) {
-        selectCountry(map, initialIso3);
-      } else {
-        map.once("load", () => selectCountry(map, initialIso3));
+    function showView() {
+      const view = viewFromUrl(location);
+      const map = $mapStore;
+      if (view.kiosk !== kiosk) {
+        kiosk = view.kiosk;
+        tick().then(() => map?.resize());
       }
-    });
+      if (!map || map.loaded()) applyView(map, view);
+      else map.once("load", () => applyView(map as maplibregl.Map, view));
+    }
+
+    showView();
+    window.addEventListener("hashchange", showView);
 
     return () => {
-      unsubscribe();
+      window.removeEventListener("hashchange", showView);
       cleanup();
     };
+  });
+
+  // Mirrors the selection into the query string so any view can be shared as a link.
+  $effect(() => {
+    const iso3 = $selectedIso3;
+    const params = `country=${iso3}&source=${$selectedSource}&level=${$selectedAdmin}`;
+    if (!iso3 || kiosk) return;
+    goto(resolve(`/?${params}`), { replaceState: true, noScroll: true, keepFocus: true });
   });
 </script>
 
 <div class="app-shell">
-  <CountrySidebar />
+  {#if !kiosk}
+    <CountrySidebar />
+  {/if}
   <div class="map-area">
     <div bind:this={mapContainer} class="map"></div>
-    <StatsPanel iso3={$selectedIso3} />
+    {#if !kiosk}
+      <StatsPanel iso3={$selectedIso3} />
+    {/if}
   </div>
 </div>
 

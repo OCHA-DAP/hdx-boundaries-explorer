@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
-  import { resolve } from "$app/paths";
   import { selectCountry, selectSource } from "$lib/map/admin";
   import { mapStore, selectedIso3, selectedSource } from "$lib/map/store";
   import { getCountries } from "$lib/parquet/countries";
@@ -46,7 +44,7 @@
   });
 
   // Scrolls the selected country's row to the middle of the list whenever the
-  // selection changes — covers the initial ?country= query-param load and
+  // selection changes — covers the initial URL view load (?country= or #country=) and
   // clicking a country directly on the map. Skipped when the selection change
   // came from clicking a row in this list itself (skipNextCenter), since the
   // row is already in view and re-centering it under the user's cursor is
@@ -119,7 +117,6 @@
   function selectRow(iso3: string) {
     skipNextCenter = true;
     selectCountry(get(mapStore), iso3);
-    goto(resolve(`/?country=${iso3}`), { replaceState: true, noScroll: true, keepFocus: true });
   }
 
   function onKeydown(e: KeyboardEvent) {

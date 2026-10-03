@@ -1,5 +1,3 @@
-import { goto } from "$app/navigation";
-import { resolve } from "$app/paths";
 import { selectCountry } from "$lib/map/admin";
 import { selectedIso3 } from "$lib/map/store";
 import type maplibregl from "maplibre-gl";
@@ -13,6 +11,5 @@ export function addClickInteraction(map: maplibregl.Map): void {
     if (!iso3 || iso3 === get(selectedIso3)) return;
 
     selectCountry(map, iso3);
-    goto(resolve(`/?country=${iso3}`), { replaceState: true, noScroll: true, keepFocus: true });
   });
 }

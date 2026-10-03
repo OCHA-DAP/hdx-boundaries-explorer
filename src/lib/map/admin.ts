@@ -3,6 +3,7 @@ import { getMatchForCountry } from "$lib/parquet/sourceMatch";
 import { getStatsForCountry, type SourceStat } from "$lib/parquet/sourceStats";
 import { getDecisionForIso3, type Decision } from "$lib/sheet/decisions";
 import { ADMIN_SOURCES, getLevelsForSource } from "$lib/sources";
+import type { ViewState } from "$lib/urlState";
 import type maplibregl from "maplibre-gl";
 import { get } from "svelte/store";
 import { labelsEnabled, selectedAdmin, selectedIso3, selectedSource } from "./store";
@@ -91,10 +92,15 @@ export async function fitCountryBounds(map: maplibregl.Map, iso3: string): Promi
 // source for this country (team decision, else priority-list fallback — see
 // resolveDefaultSource) at the level with the most admin units, and applies
 // the resulting source/level filter. Shared by CountrySidebar's row clicks
-// and the page's initial ?country= query-param handling so both go through
-// the same sequence. Always re-resolves the source on every call — there's
-// no stickiness of a previously-selected source across country switches.
-export async function selectCountry(map: maplibregl.Map | null, iso3: string): Promise<void> {
+// and the page's URL view handling (applyView) so both go through the same
+// sequence. Always re-resolves the source on every call — there's no
+// stickiness of a previously-selected source across country switches. An
+// explicit `view` source (and optionally level) from the URL skips that.
+export async function selectCountry(
+  map: maplibregl.Map | null,
+  iso3: string,
+  view: { source?: string; level?: number } = {},
+): Promise<void> {
   selectedIso3.set(iso3);
   if (!iso3) return;
 
@@ -104,10 +110,10 @@ export async function selectCountry(map: maplibregl.Map | null, iso3: string): P
     getDecisionForIso3(iso3),
   ]);
 
-  const source = resolveDefaultSource(decision, stats);
+  const source = view.source ?? resolveDefaultSource(decision, stats);
   if (source !== null) {
     selectedSource.set(source);
-    selectedAdmin.set(pickLevelWithMostUnits(stats, source));
+    selectedAdmin.set(view.level ?? pickLevelWithMostUnits(stats, source));
   }
 
   if (!map) return;
@@ -149,6 +155,15 @@ export function selectSourceLevel(
   if (!map || !iso3) return;
   applyAdminFilter(map, iso3);
   applyMismatchHighlight(map, iso3);
+}
+
+// Applies a URL view (see $lib/urlState): a new country goes through
+// selectCountry, the same country only switches source/level.
+export async function applyView(map: maplibregl.Map | null, view: ViewState): Promise<void> {
+  if (!view.country) return;
+  if (view.country !== get(selectedIso3)) return selectCountry(map, view.country, view);
+  if (view.source && view.level) selectSourceLevel(map, view.country, view.source, view.level);
+  else if (view.source) await selectSource(map, view.country, view.source);
 }
 
 let cancelPendingHide: (() => void) | null = null;
