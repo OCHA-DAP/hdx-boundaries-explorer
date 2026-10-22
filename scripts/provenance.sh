@@ -6,7 +6,7 @@ set -euo pipefail
 # they're built from raw exports committed under scripts/data/provenance/ —
 # periodically replaced by hand whenever a contributor submits an updated
 # snapshot (format varies submission to submission — see the extraction notes
-# below). WFP, UNHCR, World Bank, and UNGIS/SALB all carry provenance directly
+# below). WFP and UNHCR carry provenance directly
 # in their downloaded boundary layers, which is richer and more current than
 # any hand-compiled snapshot of them, so those are read straight from
 # static/parquet/*.parquet instead. Must run after every download:<source>
@@ -65,26 +65,7 @@ duckdb -c "
       array_to_string(list_distinct(list(source)), '; ') AS provider,
       max(src_date) AS source_updated
     FROM read_parquet('static/parquet/unhcr_adm1.parquet')
-    GROUP BY iso3
-  UNION ALL
-    -- World Bank's GEOM_SRCE is consistent for every row of a given country
-    -- (no country has more than one distinct value), and reveals real
-    -- attribution: most countries read 'WB GAD' (digitized in-house), but
-    -- some read 'UN SALB' or 'UN HDX' — i.e. WB sourced those from UNGIS or
-    -- OCHA/HDX rather than digitizing them. No date field is available.
-    SELECT 'wb' AS source, \"ISO_A3\" AS iso3, any_value(\"GEOM_SRCE\") AS provider,
-      NULL::DATE AS source_updated
-    FROM read_parquet('static/parquet/wb_adm1.parquet')
-    GROUP BY \"ISO_A3\"
-  UNION ALL
-    -- UNGIS/SALB's datsor is a per-admin-unit source date (mostly D/M/YYYY,
-    -- with some malformed values that try_strptime just turns into NULL).
-    -- No separate provider text field exists — SALB is itself the
-    -- standardized system, so provider is left blank here.
-    SELECT 'salb' AS source, iso3cd AS iso3, NULL::VARCHAR AS provider,
-      max(try_strptime(datsor, '%d/%m/%Y')::DATE) AS source_updated
-    FROM read_parquet('static/parquet/salb_adm1.parquet')
-    GROUP BY iso3cd;
+    GROUP BY iso3;
 
   COPY provenance TO '${OUT_PARQUET}' (FORMAT PARQUET, COMPRESSION ZSTD, COMPRESSION_LEVEL 15);
   COPY (SELECT * FROM provenance ORDER BY source, iso3) TO '${OUT_CSV}' (HEADER, DELIMITER ',');

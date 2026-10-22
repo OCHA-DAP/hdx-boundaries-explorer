@@ -14,7 +14,7 @@ from pathlib import Path
 
 import duckdb
 
-# Keep in sync with scripts/stats.sh and src/lib/sources.ts.
+# Keep in sync with scripts/stats.sh and cod-site's src/lib/sources.ts.
 
 
 @dataclass(frozen=True)
@@ -44,37 +44,11 @@ SOURCES = [
     ),
     Source("unhcr", "iso3", [1, 2]),
     Source(
-        "salb",
-        "iso3cd",
-        [1, 2],
-        "adm{level}nm",
-        [
-            "Waterbody",
-            "Name Unknown",
-            "Area under National Administration",
-            "Under National Administration",
-            "Area without administration at 2nd level",
-            "Area without administration at the 2nd level",
-            "Lake Tanganyika",
-            "N/A",
-            "N_A",
-            "",
-            "Administrative unit not available",
-        ],
-    ),
-    Source(
         "fao",
         "ISO3_CODE",
         [1, 2],
         "GAUL{level}_NAME",
         ["Waterbody", "Undefined", "Administrative Unit Not Available"],
-    ),
-    Source(
-        "wb",
-        "ISO_A3",
-        [1, 2],
-        "NAM_{level}",
-        ["Name Unknown", "Under National Administration", "Administrative unit not available"],
     ),
 ]
 
